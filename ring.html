@@ -134,6 +134,26 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
 .bm img { width: 22px; height: 27px; object-fit: cover; border-radius: 50%; border: 1px solid var(--ink); }
 .bm .w { color: #149a5c; } .bm .l { opacity: .45; text-decoration: line-through; }
 .bm.now { background: var(--sun); }
+.arena-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 760px; }
+.arena-row button { background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; padding: 7px 12px; font-weight: 700; font-size: 15px; box-shadow: 0 3px 0 var(--ink); }
+.arena-row button small { display: block; font-size: 11px; font-weight: 600; opacity: .75; }
+.arena-row button[aria-pressed="true"] { background: var(--sun); }
+.field { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; width: 100%; max-width: 760px; margin-bottom: 10px; }
+.field .corner { padding: 6px 4px; border-width: 3px; }
+.field .corner img { width: 58px; height: 72px; }
+.field .corner b { font-size: 15px; }
+.roster { position: fixed; z-index: 5; left: 50%; transform: translateX(-50%); top: max(8px, env(safe-area-inset-top)); display: flex; gap: 5px; pointer-events: none; }
+.roster .rs { width: 50px; text-align: center; color: #fff; font-size: 10px; font-weight: 700; text-shadow: 1px 1px 0 var(--ink); }
+.roster img { width: 42px; height: 52px; object-fit: cover; border-radius: 50%; border: 3px solid var(--c, #fff); background: #fff; display: block; margin: 0 auto; }
+.roster i { display: block; height: 8px; border: 2px solid var(--ink); background: #3a1424; overflow: hidden; margin-top: 2px; }
+.roster i b { display: block; height: 100%; background: #5cf08a; }
+.roster .rs.ko { opacity: .4; filter: grayscale(1); }
+.roster .rs.ko::after { content: "TUMBANG"; display: block; color: #ff8a95; }
+.hud.ffa .plate { visibility: hidden; }
+.hud.ffa { top: calc(max(8px, env(safe-area-inset-top)) + 74px); }
+.flash { position: fixed; inset: 0; z-index: 8; background: #fff; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.flash.on { opacity: .55; transition: none; }
+@media (max-width: 640px) { .roster .rs { width: 40px; } .roster img { width: 34px; height: 42px; } .hud.ffa { top: calc(max(8px, env(safe-area-inset-top)) + 64px); } }
 .err { position: fixed; z-index: 99; left: 16px; right: 16px; bottom: 16px; background: #fff; border: 3px solid var(--red); border-radius: 14px; padding: 10px 14px; font-weight: 600; }
 @media (max-width: 640px) {
   .plate img { width: 40px; height: 50px; }
@@ -152,9 +172,10 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
 
 <section class="screen" id="s-title">
   <h1>RING<br>KANTOR</h1>
-  <p class="tag">Tinju otomatis di atap gudang. Tonton, atur strategi dari pojok, dan tebak siapa juaranya pakai poin!</p>
+  <p class="tag">Smackdown kantor otomatis! Banting, suplex, hantam pakai CPU. Tonton, atur strategi, dan tebak juaranya pakai poin!</p>
   <div class="modes">
-    <button data-go="exhib"><span class="ic">🥊</span><span><b>Tanding Eksibisi</b><small>Pilih 2 petinju, pasang taruhan, tonton</small></span></button>
+    <button data-go="duel"><span class="ic">🥊</span><span><b>Duel 1 lawan 1</b><small>Pilih 2 jagoan & arena, pasang taruhan</small></span></button>
+    <button data-go="ffa"><span class="ic">🔥</span><span><b>Tawuran 3–8 Orang</b><small>Semua saling hajar, yang terakhir berdiri menang</small></span></button>
     <button data-go="tour"><span class="ic">🏆</span><span><b>Turnamen 8 Orang</b><small>Tebak juara, tonton sampai final</small></span></button>
     <button data-go="wallet"><span class="ic">💰</span><span><b>Dompet & Peringkat</b><small>Siapa paling jago nebak?</small></span></button>
   </div>
@@ -164,12 +185,16 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
     <span style="font-weight:700;margin-left:8px">Pixel:</span>
     <button class="chip" data-px="1">Halus</button><button class="chip" data-px="2">Pixel</button><button class="chip" data-px="3">Jadul</button>
     <button class="chip" id="opt-sound">🔊 Suara</button>
+    <button class="chip" id="opt-blood">🩸 Darah</button>
+    <button class="chip" id="opt-cine">🎬 Sinematik</button>
   </div>
   <p class="disclaimer">Taruhannya pakai <b>Poin Kantor</b> bohongan, bukan uang. Tiap orang mulai dengan 1.000 poin.</p>
 </section>
 
 <section class="screen" id="s-pick" hidden>
-  <h2 id="pick-title">Pilih petinju</h2>
+  <h2>Arena</h2>
+  <div class="arena-row" id="arena-row"></div>
+  <h2 id="pick-title" style="margin-top:14px">Pilih petinju</h2>
   <div class="pick-grid" id="pick-grid"></div>
   <div class="sticky">
     <button class="btn ghost" id="pick-back">◀</button>
@@ -181,6 +206,7 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
 <section class="screen" id="s-bet" hidden>
   <h2 id="bet-title">Pasang Taruhan</h2>
   <div class="vs" id="bet-vs"></div>
+  <div class="field" id="bet-field" hidden></div>
   <div class="card">
     <b>Siapa yang mau taruhan?</b> <small>Ketuk wajahmu, lalu pilih jagoan.</small>
     <div class="who" id="bet-who"></div>
@@ -220,6 +246,8 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
   <div class="center"><div class="rd" id="h-rd">RONDE 1</div><div class="clk" id="h-clk">1:00</div></div>
   <div class="plate r"><img id="h-f1" alt=""><div class="bars"><div class="nm" id="h-n1"></div><div class="bar"><i id="h-hp1"></i></div><div class="bar sta"><i id="h-st1"></i></div><div class="kd" id="h-kd1"></div></div></div>
 </div>
+<div class="roster" id="roster" hidden></div>
+<div class="flash" id="flash"></div>
 <div class="mybet" id="mybet" hidden></div>
 <div class="feed" id="feed" hidden></div>
 <div class="ctrl" id="ctrl" hidden>
@@ -238,6 +266,7 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
   <img class="result-face" id="r-face" alt="">
   <div class="big" id="r-big"></div>
   <div class="how" id="r-how"></div>
+  <div class="card" id="r-rank-wrap"><b>Peringkat tawuran</b><div class="lead" id="r-rank"></div></div>
   <div class="card" id="r-cards-wrap"><b>Kartu juri</b><div class="cards" id="r-cards"></div></div>
   <div class="card" id="r-bets-wrap"><b>Hasil taruhan</b><div class="bets" id="r-bets"></div></div>
   <div class="sticky">

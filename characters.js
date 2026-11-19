@@ -59,3 +59,30 @@ window.BRAWL = {
   ali:    { type: "drop", obj: "stamp",     name: "Stempel ACC Raksasa",   pants: "#3a4a3a", say: "Di-ACC!" },
   topik:  { type: "stun", obj: "laptop",    name: "Hack Sistem Lawan",     pants: "#2b3350", say: "Akses diterima! 💻" },
 };
+
+// ============================================================
+//  RING KANTOR — jurus khas tiap orang (dipakai kalau bar jurus penuh)
+//  sig: "weapon" -> keluarkan senjata pribadi lalu hantam (obj: palu, monitor, kentongan, cpu, printer, stempel)
+//       "throw"  -> lempar sesuatu ke lawan (obj: kardus, bola, sp, tas, laptop, gorengan); stun: true = lawan pusing
+//       "choke"  -> lilit lawan pakai kabel (obj: mouse, kabel)
+//       "cat"    -> lepas kucing peliharaan untuk mencakar lawan
+// ============================================================
+window.RING = {
+  sidik:  { sig: "throw",  obj: "kardus",    name: "Kardus Kilat" },
+  monang: { sig: "cat",    obj: "kucing",    name: "Kucing Kesayangan Monang" },
+  wawan:  { sig: "weapon", obj: "palu",      name: "Palu Tukang" },
+  dani:   { sig: "weapon", obj: "palu",      name: "Palu Godam Mantan Tukang" },
+  sharil: { sig: "choke",  obj: "mouse",     name: "Lilitan Kabel Mouse" },
+  fajar:  { sig: "throw",  obj: "bola",      name: "Tendangan Bola Barca" },
+  lana:   { sig: "choke",  obj: "kabel",     name: "Lilit Kabel LAN" },
+  anang:  { sig: "weapon", obj: "monitor",   name: "Monitor Melayang" },
+  pakrt:  { sig: "weapon", obj: "kentongan", name: "Pentungan Ronda" },
+  josh:   { sig: "throw",  obj: "sp",        name: "Surat Peringatan dari Papa", stun: true },
+  irul:   { sig: "weapon", obj: "cpu",       name: "CPU Gede" },
+  paktas: { sig: "throw",  obj: "tas",       name: "Lempar Tas Kerja" },
+  ardi:   { sig: "throw",  obj: "bola",      name: "Tendangan Setan Merah" },
+  hery:   { sig: "weapon", obj: "printer",   name: "Printer Macet" },
+  heriw:  { sig: "throw",  obj: "gorengan",  name: "Gorengan Panas" },
+  ali:    { sig: "weapon", obj: "stempel",   name: "Stempel ACC" },
+  topik:  { sig: "throw",  obj: "laptop",    name: "Laptop Berisi Virus", stun: true },
+};
