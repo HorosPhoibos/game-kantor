@@ -15,6 +15,7 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = (arr) => arr.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
   const wrapA = (a) => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; };
   const money = (n) => "Rp " + (Math.round(n) * 1000).toLocaleString("id-ID");
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -52,7 +53,7 @@
   };
 
   // ---------------- data dunia ----------------
-  const CELL = 22, ROAD = 7, NB = 6, LANE = 1.6;
+  const CELL = 22, ROAD = 7, NB = 8, LANE = 1.6;
   const HALF = (NB * CELL) / 2;
   const RL = (k) => k * CELL - HALF;                 // garis tengah jalan ke-k (0..NB)
   const BL = (i) => (RL(i) + RL(i + 1)) / 2;         // tengah blok ke-i (0..NB-1)
@@ -69,16 +70,20 @@
   const ITEM_KEYS = Object.keys(ITEMS);
 
   const PLACES = [
-    { key: "sekolah", label: "SD Harapan",   icon: "🏫", b: [0, 1], color: 0xff8a5c, roof: 0xd94f2a, h: 6 },
-    { key: "bank",    label: "Bank Sentosa", icon: "🏦", b: [4, 0], color: 0x3d7bff, roof: 0x1f4fc0, h: 11 },
-    { key: "warnet",  label: "Warnet GG",    icon: "🎮", b: [5, 3], color: 0x9b5cff, roof: 0x6a2fd0, h: 5 },
-    { key: "rs",      label: "RS Sehat",     icon: "🏥", b: [3, 5], color: 0xffffff, roof: 0xff4a4a, h: 9 },
-    { key: "kantor",  label: "Kantor Pajak", icon: "🏢", b: [1, 4], color: 0x2bb3a3, roof: 0x16786d, h: 13 },
-    { key: "ruko",    label: "Ruko Jaya",    icon: "🏪", b: [3, 2], color: 0xffc23f, roof: 0xe0901a, h: 5 },
-    { key: "kampus",  label: "Kampus",       icon: "🎓", b: [0, 5], color: 0xc0504d, roof: 0x8a2a28, h: 8 },
-    { key: "hotel",   label: "Hotel Melati", icon: "🏨", b: [5, 1], color: 0xff6fa8, roof: 0xd63a7a, h: 12 },
+    { key: "sekolah", label: "SD Harapan",    icon: "🏫", b: [0, 1], color: 0xff8a5c, roof: 0xd94f2a, h: 6 },
+    { key: "bank",    label: "Bank Sentosa",  icon: "🏦", b: [6, 0], color: 0x3d7bff, roof: 0x1f4fc0, h: 11 },
+    { key: "warnet",  label: "Warnet GG",     icon: "🎮", b: [7, 3], color: 0x9b5cff, roof: 0x6a2fd0, h: 5 },
+    { key: "rs",      label: "RS Sehat",      icon: "🏥", b: [3, 7], color: 0xffffff, roof: 0xff4a4a, h: 9 },
+    { key: "kantor",  label: "Kantor Pajak",  icon: "🏢", b: [1, 5], color: 0x2bb3a3, roof: 0x16786d, h: 13 },
+    { key: "ruko",    label: "Ruko Jaya",     icon: "🏪", b: [4, 2], color: 0xffc23f, roof: 0xe0901a, h: 5 },
+    { key: "kampus",  label: "Kampus",        icon: "🎓", b: [0, 7], color: 0xc0504d, roof: 0x8a2a28, h: 8 },
+    { key: "hotel",   label: "Hotel Melati",  icon: "🏨", b: [7, 6], color: 0xff6fa8, roof: 0xd63a7a, h: 12 },
+    { key: "kafe",    label: "Kafe Senja",    icon: "☕", b: [2, 0], color: 0xa0673f, roof: 0x6b3f22, h: 5 },
+    { key: "bengkel", label: "Bengkel Maju",  icon: "🔧", b: [5, 5], color: 0x7d8597, roof: 0x3d4555, h: 6 },
+    { key: "bangun",  label: "Toko Bangunan", icon: "🧱", b: [5, 7], color: 0xe07a3a, roof: 0x9e4a1a, h: 6 },
+    { key: "klinik",  label: "Klinik Gigi",   icon: "🦷", b: [1, 3], color: 0x7fd1c8, roof: 0x2a8f86, h: 7 },
   ];
-  const DEPOT = { key: "depot", b: [2, 2], label: "Gudang", icon: "🏭" };
+  const DEPOT = { key: "depot", b: [3, 4], label: "Gudang", icon: "🏭" };
   const placeOf = (key) => (key === "depot" ? DEPOT : PLACES.find((p) => p.key === key));
 
   const CARS = {
@@ -208,7 +213,7 @@
     const zoneSeg = new Set(Object.values(zones).map((z) => z.x + "," + z.z));
     const segs = [];
     for (let k = 0; k <= NB; k++) for (let s = 0; s < NB; s++) { segs.push({ x: BL(s), z: RL(k), axis: "x" }); segs.push({ x: RL(k), z: BL(s), axis: "z" }); }
-    segs.filter((b) => !zoneSeg.has(b.x + "," + b.z)).sort(() => Math.random() - 0.5).slice(0, 12).forEach((b) => {
+    segs.filter((b) => !zoneSeg.has(b.x + "," + b.z)).sort(() => Math.random() - 0.5).slice(0, 18).forEach((b) => {
       const along = b.axis === "x";
       scene.add(along ? box(0.9, 0.3, ROAD - 0.4, 0xffd23f, b.x, 0.15, b.z) : box(ROAD - 0.4, 0.3, 0.9, 0xffd23f, b.x, 0.15, b.z));
       for (let s = -1; s <= 1; s++) scene.add(along ? box(0.92, 0.32, 0.7, 0x1d1530, b.x, 0.15, b.z + s * 2) : box(0.7, 0.32, 0.92, 0x1d1530, b.x + s * 2, 0.15, b.z));
@@ -331,11 +336,12 @@
     if (type === "mpv") for (let k = 0; k < 4; k++) { const b = box(0.8, 0.6, 0.8, 0xc8955a, (k % 2 ? 0.45 : -0.45), 2.9, -0.9 - Math.floor(k / 2) * 0.9); b.visible = false; body.add(b); roofBoxes.push(b); }
     return { g, body, head, headY, roofBoxes };
   }
-  function makeNpcCar() {
+  function makeNpcCar(driver) {
     const g = new THREE.Group();
     const c = pick([0xff4d6d, 0x3ec1ff, 0x9bde4a, 0xffa53f, 0xb08cff, 0x333a4a]);
     g.add(box(2.0, 0.9, 3.8, c, 0, 0.8, 0), box(1.8, 0.8, 2.0, 0x23324d, 0, 1.6, -0.2), box(1.7, 0.1, 1.9, c, 0, 2.05, -0.2));
     g.add(blob(3.6, 5.6));
+    if (driver) { const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: stickerTexture(driver) })); h.scale.set(2.2, 2.75, 1); h.position.set(0, 3.4, -0.2); g.add(h); }
     return g;
   }
   function makeCat() {
@@ -511,9 +517,11 @@
   function setupTraffic() {
     S.npcs.forEach((n) => scene.remove(n.g));
     S.npcs = [];
-    for (let k = 0; k < 6; k++) {
+    const drivers = shuffle(CREW.filter((c) => c !== S.driver));
+    for (let k = 0; k < 10; k++) {
       const i = Math.floor(rand(0, NB + 1)), j = Math.floor(rand(0, NB + 1));
-      const n = { g: makeNpcCar(), i, j, ti: i, tj: j, pi: -1, pj: -1, t: 1, sp: rand(6, 8.5), x: RL(i), z: RL(j), a: 0, hold: 0 };
+      const driver = drivers.length ? drivers[k % drivers.length] : null;
+      const n = { g: makeNpcCar(driver), driver, i, j, ti: i, tj: j, pi: -1, pj: -1, t: 1, sp: rand(6, 8.5), x: RL(i), z: RL(j), a: 0, hold: 0 };
       scene.add(n.g); S.npcs.push(n);
     }
   }
@@ -531,7 +539,8 @@
       // mengalah kalau mobil kita ada di depan
       const fx = Math.sin(n.a), fz = Math.cos(n.a), px = S.x - n.x, pz = S.z - n.z;
       const ahead = px * fx + pz * fz, side = Math.abs(px * fz - pz * fx);
-      const blocked = S.mode !== "menu" && ahead > 0 && ahead < 6.5 && side < 2.6;
+      if (n.hold > 0) n.hold -= dt;
+      const blocked = n.hold > 0 || (S.mode !== "menu" && ahead > 0 && ahead < 6.5 && side < 2.6);
       if (!blocked) {
         if (n.t >= 1) npcNext(n);
         n.t = Math.min(1, n.t + (n.sp * dt) / CELL);
@@ -694,13 +703,14 @@
   function showReact(kind, secs) {
     const b = $("b-react");
     b.className = "react" + (kind === "bump" ? " slow" : "");
-    b.innerHTML = (kind === "bump" ? "<span>🐢</span>PELAN!" : "<span>✋</span>REM!") + `<i style="--d:${secs.toFixed(2)}s"></i>`;
+    b.innerHTML = (kind === "bump" ? "<span>🐢</span>PELAN!" : kind === "car" ? "<span>🚗</span>REM!" : "<span>✋</span>REM!") + `<i style="--d:${secs.toFixed(2)}s"></i>`;
     b.hidden = false; sfx.alert();
   }
   function clearReact() { S.react = null; $("b-react").hidden = true; }
   function doReact() {
     const r = S.react; if (!r) return;
     if (r.kind === "bump") { r.hit.state = "slow"; say(pick(["Pelan-pelan… aman!", "Sip, barang aman."])); }
+    else if (r.kind === "car") { S.brakeT = 1.6; S.carCd = 2.5; say(pick(["Hampir nabrak! Fiuh…", "Woy, mobilnya nyelonong!"])); }
     else { S.brakeT = 1.4; say("Eh, ada kucing! Hampir aja."); }
     sfx.good(); toast("👍 Aman!");
     clearReact();
@@ -876,7 +886,7 @@
     S.time -= dt;
     if (S.time <= 0) { S.time = 0; endShift(false); return; }
     S.spawnT -= dt;
-    if (S.orders.length < 3 && S.spawnT <= 0) { spawnOrder(); S.spawnT = rand(6, 10); }
+    if (S.orders.length < 4 && S.spawnT <= 0) { spawnOrder(); S.spawnT = rand(6, 10); }
     let changed = false;
     S.orders.slice().forEach((o) => {
       o.left -= dt;
@@ -896,6 +906,29 @@
 
     // keluar dari zona -> boleh berhenti lagi di zona itu
     if (S.zoneLock) { const z = zones[S.zoneLock]; if (Math.hypot(S.x - z.x, S.z - z.z) > 7) S.zoneLock = null; }
+  }
+  // nabrak mobil orang = bayar ganti rugi ke sopirnya
+  function payFine(n, base) {
+    const fine = Math.round(base + rand(0, 40));
+    S.score = Math.max(0, S.score - fine); S.fines += fine; S.crashes++;
+    n.hold = 1.6;
+    const who = n.driver ? n.driver.name : "sopir";
+    toast(`💸 Ganti rugi ${money(fine)}`);
+    say(`${who}: "Woy! Ganti rugi!" 😤`);
+    if (n.driver) showFine(n.driver, fine);
+  }
+  function showFine(c, fine) {
+    let el = $("fine");
+    if (!el) { el = document.createElement("div"); el.id = "fine"; el.className = "fine"; document.body.appendChild(el); }
+    el.innerHTML = `<img src="faces/${c.id}.png" alt=""><div><b>${c.name} minta ganti rugi!</b><br>Mobilnya penyok. Kamu bayar <b>${money(fine)}</b> 💸</div>`;
+    el.hidden = false; el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+    clearTimeout(showFine.t); showFine.t = setTimeout(() => { el.hidden = true; }, 2600);
+  }
+  function crashInto(n) {
+    S.v = 0; S.brakeT = 0.9; S.carCd = 4; S.shake = 0.5;
+    sfx.crash(); carMesh.body.position.y = 0.4;
+    damage(0.18, null);
+    payFine(n, 50);
   }
   function stepAuto(dt, car, vmax) {
     const r = S.route, left = r.total - S.s;
@@ -942,6 +975,18 @@
       }
       if (c.t >= 1) { scene.remove(c.g); S.cat = null; if (S.react && S.react.kind === "cat") clearReact(); }
     }
+    // mobil lain nyelonong di depan
+    S.carCd = Math.max(0, S.carCd - dt);
+    {
+      const fx = Math.sin(S.a), fz = Math.cos(S.a);
+      let hitN = null, hd = 1e9;
+      S.npcs.forEach((n) => { const px = n.x - S.x, pz = n.z - S.z, ah = px * fx + pz * fz, sd = Math.abs(px * fz - pz * fx); if (ah > 0 && ah < 10 && sd < 2.4 && ah < hd) { hd = ah; hitN = n; } });
+      if (S.react && S.react.kind === "car" && (!hitN || S.v < 3)) clearReact();
+      if (hitN && S.carCd <= 0 && S.v > 6) {
+        if (!S.react) { S.react = { kind: "car", npc: hitN }; showReact("car", Math.max(0.6, (hd - 3.4) / S.v)); }
+        else if (S.react.kind === "car" && hd < 3.4) { clearReact(); crashInto(hitN); }
+      }
+    }
     if (S.s >= r.total - 0.01) arrive(r.key);
   }
   function stepManual(dt, car, vmax) {
@@ -976,7 +1021,7 @@
       const dx = S.x - n.x, dz = S.z - n.z, d = Math.hypot(dx, dz), min = r + 1.6;
       if (d < min && d > 0.001) {
         S.x += (dx / d) * (min - d); S.z += (dz / d) * (min - d);
-        if (S.hitCd <= 0 && Math.abs(S.v) > 5) { damage(0.1, "Maaf, Pak! Nyenggol 🙏"); S.hitCd = 0.8; S.shake = 0.4; sfx.crash(); }
+        if (S.hitCd <= 0 && Math.abs(S.v) > 5) { damage(0.1, null); S.hitCd = 1.2; S.shake = 0.4; sfx.crash(); payFine(n, 30 + Math.abs(S.v) * 2); }
         S.v *= 0.4;
       }
     });
@@ -1073,7 +1118,7 @@
     carMesh = makeCar(S.carType, S.driver); scene.add(carMesh.g);
     driverPerson = makePerson(S.driver, 0.9); driverPerson.g.visible = false; scene.add(driverPerson.g);
     const z = zones.depot;
-    Object.assign(S, { mode: "play", x: z.x + 9, z: z.z - LANE, a: Math.PI / 2, v: 0, time: SHIFT, score: 0, delivered: 0, stars: 0, failed: 0, bumpsHit: 0,
+    Object.assign(S, { mode: "play", x: z.x + 9, z: z.z - LANE, a: Math.PI / 2, v: 0, time: SHIFT, score: 0, delivered: 0, stars: 0, failed: 0, bumpsHit: 0, fines: 0, crashes: 0, carCd: 0,
       orders: [], spawnT: 0, boost: 0, kopi: 2, hitCd: 0, bumpCd: 0, brakeT: 0, route: null, s: 0, manual: false, zoneLock: null, catT: 14 });
     clearReact(); setupTraffic();
     spawnOrder(); spawnOrder();
@@ -1096,7 +1141,7 @@
     const rank = sc >= 1600 ? "👑 Raja Antar Se-Kota" : sc >= 1000 ? "🏅 Kurir Andalan Bos" : sc >= 500 ? "🙂 Kurir Lumayan" : "🐢 Kurir Magang";
     $("r-rank").textContent = S.driver.name + " — " + rank;
     const avg = S.delivered ? (S.stars / S.delivered).toFixed(1) : "-";
-    $("r-stats").innerHTML = `<div><b>${S.delivered}</b>terkirim</div><div><b>${avg}⭐</b>rata-rata</div><div><b>${S.failed}</b>telat</div><div><b>${S.bumpsHit}</b>kebanting</div>`;
+    $("r-stats").innerHTML = `<div><b>${S.delivered}</b>terkirim</div><div><b>${avg}⭐</b>rata-rata</div><div><b>${S.failed}</b>telat</div><div><b>${S.bumpsHit}</b>kebanting</div><div><b>${S.crashes}</b>nabrak (−${money(S.fines)})</div>`;
     renderBoard($("board-result")); renderBoard($("board-title"));
     show("s-result");
   }

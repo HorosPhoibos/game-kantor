@@ -24,6 +24,10 @@ a.game h2 { margin: 8px 0 4px; font-size: 30px; }
 a.game p { margin: 0 0 14px; font-size: 17px; font-weight: 500; line-height: 1.4; }
 a.game span { display: inline-block; background: var(--sun); border: 3px solid var(--ink); border-radius: 14px; padding: 8px 18px; font-size: 20px; font-weight: 700; }
 a.game.brawl span { background: var(--pink); color: #fff; }
+a.game.feature { grid-column: 1 / -1; background: linear-gradient(135deg, #3b2a6b, #6a3fb5); color: #fff; }
+a.game.feature h2 { font-size: 36px; }
+a.game.feature span { background: var(--sun); color: var(--ink); }
+a.game.hoki span { background: #7a3cff; color: #fff; }
 </style>
 </head>
 <body>
@@ -31,6 +35,12 @@ a.game.brawl span { background: var(--pink); color: #fff; }
   <p class="sub">Pilih mau main yang mana</p>
   <div class="faces" id="faces"></div>
   <div class="games">
+    <a class="game ring feature" href="ring.html">
+      <div class="ic">🔔</div>
+      <h2>Ring Kantor</h2>
+      <p>Smackdown kantor! Duel atau tawuran sampai 8 orang di ring, gudang, kolam, warung, dan parkiran. Banting, suplex, hantam pakai CPU, jurus khas tiap orang. Tonton bareng dan pasang taruhan poin.</p>
+      <span>Nonton ▶</span>
+    </a>
     <a class="game" href="antar.html">
       <div class="ic">🚐</div>
       <h2>Antar Rakit</h2>
@@ -40,14 +50,14 @@ a.game.brawl span { background: var(--pink); color: #fff; }
     <a class="game brawl" href="brawl.html">
       <div class="ic">🥊</div>
       <h2>Office Brawl</h2>
-      <p>Adu jotos 1 lawan 1 pakai jurus andalan masing-masing. Lawan komputer atau teman.</p>
+      <p>Adu jotos sendiri: 1 lawan 1 atau tawuran 3–8 orang. Lawan komputer atau teman.</p>
       <span>Tarung ▶</span>
     </a>
-    <a class="game ring" href="ring.html">
-      <div class="ic">🔔</div>
-      <h2>Ring Kantor</h2>
-      <p>Tinju otomatis di atap gudang. Tonton bareng, atur strategi, dan tebak juara pakai poin.</p>
-      <span>Nonton ▶</span>
+    <a class="game hoki" href="hoki.html">
+      <div class="ic">🎰</div>
+      <h2>Hoki Kantor</h2>
+      <p>Putar mesin hoki bergambar wajah teman kantor. Kejar scatter dan putaran gratis. Pakai Poin Kantor, bukan uang.</p>
+      <span>Putar ▶</span>
     </a>
   </div>
 <script src="characters.js"></script>
