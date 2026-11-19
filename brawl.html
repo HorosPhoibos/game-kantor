@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#ff4f8b">
+<title>Office Brawl</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --ink: #1d1530; --paper: #fffaf0; --sun: #ffcf3f; --pink: #ff4f8b; --blue: #2f6fe0; --green: #22c27a; --red: #ff4a4a; --shadow: 0 4px 0 var(--ink); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #2a1d4a; color: var(--ink); font-family: "Fredoka", system-ui, sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
+canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.btn { border: 3px solid var(--ink); border-radius: 18px; background: var(--sun); box-shadow: var(--shadow); padding: 13px 24px; font-size: 21px; font-weight: 700; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn.ghost { background: #fff; }
+.btn.pink { background: var(--pink); color: #fff; }
+a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top)); left: 10px; background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 6px 12px; font-weight: 700; color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--ink); }
+
+.screen { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; overflow-y: auto; padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); background: rgba(255, 228, 240, .93); backdrop-filter: blur(4px); touch-action: pan-y; }
+.screen h1 { margin: 34px 0 0; font-size: clamp(48px, 11vw, 90px); line-height: .95; text-align: center; text-shadow: 0 4px 0 #fff; }
+.screen h1 span { color: var(--pink); }
+.screen h2 { margin: 8px 0 10px; font-size: clamp(22px, 5.5vw, 30px); text-align: center; }
+.tag { margin: 10px 0 16px; font-size: 18px; font-weight: 500; text-align: center; max-width: 520px; line-height: 1.4; }
+.modes { display: grid; gap: 12px; width: 100%; max-width: 440px; }
+.modes button { text-align: left; display: flex; gap: 14px; align-items: center; background: #fff; border: 4px solid var(--ink); border-radius: 20px; padding: 12px 16px; box-shadow: 0 5px 0 var(--ink); }
+.modes button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.modes b { display: block; font-size: 22px; }
+.modes small { font-size: 15px; font-weight: 500; }
+.modes .ic { font-size: 38px; }
+.keys { margin-top: 18px; max-width: 520px; width: 100%; background: #fff; border: 3px solid var(--ink); border-radius: 16px; padding: 10px 14px; font-size: 15px; font-weight: 500; line-height: 1.5; }
+.keys kbd { display: inline-block; min-width: 24px; padding: 0 5px; border: 2px solid var(--ink); border-radius: 6px; background: #fff7d6; font-family: inherit; font-weight: 700; text-align: center; }
+.settings { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.settings label { display: flex; align-items: center; gap: 6px; background: #fff; border: 2px solid var(--ink); border-radius: 99px; padding: 5px 13px; font-size: 15px; font-weight: 600; }
+
+.pick-status { font-size: 19px; font-weight: 700; background: var(--ink); color: #fff; border-radius: 99px; padding: 6px 16px; margin-bottom: 10px; text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 9px; width: 100%; max-width: 900px; }
+.fighter { position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 8px 5px; text-align: center; box-shadow: 0 3px 0 var(--ink); }
+.fighter img { width: 74px; height: 92px; object-fit: cover; border-radius: 50%; border: 3px solid var(--ink); display: block; margin: 0 auto 4px; }
+.fighter b { display: block; font-size: 17px; }
+.fighter small { display: block; font-size: 12px; font-weight: 500; line-height: 1.2; min-height: 2.4em; opacity: .85; }
+.fighter .badge { position: absolute; top: 4px; left: 4px; font-size: 12px; font-weight: 700; color: #fff; border-radius: 99px; padding: 1px 8px; border: 2px solid var(--ink); }
+.fighter.p1 { background: #cfe0ff; } .fighter.p1 .badge { background: var(--blue); }
+.fighter.p2 { background: #ffd0dd; } .fighter.p2 .badge { background: var(--pink); }
+.arenas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 9px; width: 100%; max-width: 900px; }
+.arena { background: #fff; border: 3px solid var(--ink); border-radius: 16px; padding: 9px 10px; font-size: 16px; font-weight: 700; box-shadow: 0 3px 0 var(--ink); text-align: left; }
+.arena small { display: block; font-size: 12px; font-weight: 500; }
+.arena[aria-pressed="true"] { background: var(--sun); }
+.diff { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.diff button { background: #fff; border: 3px solid var(--ink); border-radius: 99px; padding: 7px 16px; font-size: 17px; font-weight: 700; }
+.diff button[aria-pressed="true"] { background: var(--sun); }
+.sticky-go { position: sticky; bottom: 0; padding: 12px 0 4px; display: flex; gap: 10px; }
+
+/* HUD tarung */
+.hud { position: fixed; z-index: 5; left: 0; right: 0; top: max(8px, env(safe-area-inset-top)); display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: start; padding: 0 10px; pointer-events: none; }
+.side { display: flex; gap: 8px; align-items: center; }
+.side.r { flex-direction: row-reverse; }
+.side img { width: 62px; height: 76px; object-fit: cover; border-radius: 50%; border: 4px solid var(--ink); background: #fff; flex: none; }
+.side.l img { border-color: var(--blue); } .side.r img { border-color: var(--pink); }
+.bars { flex: 1; min-width: 0; }
+.side.r .bars { text-align: right; }
+.nm { font-size: 17px; font-weight: 700; color: #fff; text-shadow: 0 2px 0 var(--ink), 0 -2px 0 var(--ink), 2px 0 0 var(--ink), -2px 0 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hp { height: 22px; border: 3px solid var(--ink); border-radius: 99px; background: #4a1a2a; overflow: hidden; position: relative; }
+.hp i { position: absolute; top: 0; bottom: 0; background: linear-gradient(#7dff9e, #22c27a); transition: width .15s; }
+.hp b { position: absolute; top: 0; bottom: 0; background: #ffcf3f; transition: width .8s .3s; }
+.side.l .hp i, .side.l .hp b { left: 0; } .side.r .hp i, .side.r .hp b { right: 0; }
+.mp { margin-top: 4px; height: 12px; border: 2px solid var(--ink); border-radius: 99px; background: #fff; overflow: hidden; position: relative; }
+.mp i { position: absolute; top: 0; bottom: 0; background: var(--blue); }
+.side.r .mp i { right: 0; background: var(--pink); }
+.mp.full i { background: linear-gradient(90deg, #ffcf3f, #ff4f8b, #2f6fe0); animation: blink .5s steps(2) infinite; }
+.wins { font-size: 14px; height: 18px; }
+.mid { text-align: center; }
+.clock { min-width: 64px; background: #fff; border: 4px solid var(--ink); border-radius: 16px; font-size: 30px; font-weight: 700; padding: 0 8px; box-shadow: 0 3px 0 var(--ink); }
+.pause { pointer-events: auto; margin-top: 6px; width: 44px; height: 40px; border: 3px solid var(--ink); border-radius: 12px; background: #fff; font-size: 18px; }
+@keyframes blink { 50% { opacity: .5; } }
+
+.announce { position: fixed; z-index: 9; left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: clamp(44px, 12vw, 110px); font-weight: 700; color: #fff; white-space: nowrap; text-shadow: 0 5px 0 var(--ink), 0 -3px 0 var(--ink), 3px 0 0 var(--ink), -3px 0 0 var(--ink); pointer-events: none; animation: slam .5s cubic-bezier(.3,1.6,.6,1); text-align: center; }
+.announce small { display: block; font-size: .35em; }
+@keyframes slam { from { transform: translate(-50%, -50%) scale(2.2); opacity: 0; } }
+.say { position: fixed; z-index: 8; transform: translate(-50%, -100%); background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 4px 10px; font-size: 16px; font-weight: 700; white-space: nowrap; pointer-events: none; animation: pop .25s cubic-bezier(.3,1.6,.6,1); }
+@keyframes pop { from { transform: translate(-50%, -100%) scale(.5); opacity: 0; } }
+
+/* tombol sentuh */
+.pad { position: fixed; z-index: 6; bottom: max(14px, env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: flex-end; pointer-events: none; }
+.pad.l { left: max(12px, env(safe-area-inset-left)); }
+.pad.r { right: max(12px, env(safe-area-inset-right)); }
+.pad button { pointer-events: auto; touch-action: none; border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 5px 0 var(--ink); font-weight: 700; background: #fff; display: grid; place-items: center; line-height: 1.05; }
+.pad button.on { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); filter: brightness(.9); }
+.mv { width: 74px; height: 74px; font-size: 32px; }
+.acts { display: grid; grid-template-columns: repeat(2, 84px); gap: 10px; }
+.acts button { height: 74px; font-size: 15px; }
+.acts button span { font-size: 28px; display: block; }
+.b-punch { background: #ffd9a8 !important; } .b-kick { background: #bfe0ff !important; } .b-block { background: #e0e0e0 !important; } .b-sp { background: #d9d9d9 !important; opacity: .55; }
+.b-sp.ready { background: linear-gradient(135deg, #ffcf3f, #ff4f8b) !important; opacity: 1; color: #fff; animation: blink .6s steps(2) infinite; }
+.pad.small .mv { width: 58px; height: 58px; font-size: 24px; }
+.pad.small .acts { grid-template-columns: repeat(2, 64px); gap: 7px; }
+.pad.small .acts button { height: 56px; font-size: 12px; }
+.pad.small .acts button span { font-size: 21px; }
+.pad.p2pad { flex-direction: row-reverse; }
+
+.result-face { width: 150px; height: 184px; object-fit: cover; border-radius: 50%; border: 6px solid var(--ink); background: #fff; margin-top: 30px; }
+.big { font-size: clamp(34px, 8vw, 56px); font-weight: 700; text-align: center; line-height: 1.05; margin: 10px 0 4px; }
+.sub { font-size: 18px; font-weight: 500; text-align: center; margin-bottom: 14px; }
+.ladder { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 6px 0 14px; }
+.ladder div { text-align: center; font-size: 13px; font-weight: 700; }
+.ladder img { width: 52px; height: 64px; object-fit: cover; border-radius: 50%; border: 3px solid var(--ink); display: block; margin: 0 auto 2px; background: #fff; }
+.ladder .beat img { filter: grayscale(1); opacity: .6; }
+.ladder .now img { border-color: var(--pink); transform: scale(1.12); }
+.err { position: fixed; z-index: 99; left: 16px; right: 16px; bottom: 16px; background: #fff; border: 3px solid var(--red); border-radius: 14px; padding: 10px 14px; font-weight: 600; }
+@media (max-width: 640px) {
+  .side img { width: 46px; height: 56px; }
+  .nm { font-size: 14px; }
+  .hp { height: 18px; }
+  .clock { font-size: 22px; min-width: 50px; }
+  .acts { grid-template-columns: repeat(2, 76px); }
+  .mv { width: 66px; height: 66px; }
+}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Arena 3D Office Brawl"></canvas>
+<a class="back" href="index.html" id="back">◀ Menu</a>
+
+<section class="screen" id="s-title">
+  <h1>Office<br><span>Brawl!</span></h1>
+  <p class="tag">Adu jotos 1 lawan 1 pakai jurus andalan masing-masing. Siapa jagoan kantor?</p>
+  <div class="modes">
+    <button data-mode="cpu"><span class="ic">🤖</span><span><b>Lawan Komputer</b><small>Main sendiri, pilih lawanmu</small></span></button>
+    <button data-mode="tour"><span class="ic">🏆</span><span><b>Turnamen</b><small>Kalahkan 4 orang berturut-turut</small></span></button>
+    <button data-mode="2p"><span class="ic">👥</span><span><b>2 Pemain</b><small>Berdua di satu laptop / tablet</small></span></button>
+  </div>
+  <div class="keys">
+    <b>Cara main:</b> ketuk tombol di layar: <b>👊 Pukul</b>, <b>🦵 Tendang</b>, <b>🛡️ Tangkis</b> (tahan). Kalau bar biru penuh, ketuk <b>⭐ Jurus</b>!<br>
+    <b>Keyboard pemain 1:</b> <kbd>A</kbd><kbd>D</kbd> jalan, <kbd>F</kbd> pukul, <kbd>G</kbd> tendang, <kbd>S</kbd> tangkis, <kbd>R</kbd> jurus<br>
+    <b>Keyboard pemain 2:</b> <kbd>←</kbd><kbd>→</kbd> jalan, <kbd>K</kbd> pukul, <kbd>L</kbd> tendang, <kbd>↓</kbd> tangkis, <kbd>O</kbd> jurus
+  </div>
+  <div class="settings">
+    <label><input type="checkbox" id="opt-easy" checked> Mode gampang (jalan sendiri ke lawan)</label>
+    <label><input type="checkbox" id="opt-sound" checked> Suara</label>
+  </div>
+</section>
+
+<section class="screen" id="s-pick" hidden>
+  <h2 id="pick-title">Pilih jagoanmu</h2>
+  <div class="pick-status" id="pick-status"></div>
+  <div class="grid" id="grid"></div>
+  <div id="pick-extra">
+    <h2 style="margin-top:16px">Arena</h2>
+    <div class="arenas" id="arenas"></div>
+    <div id="diff-wrap"><h2 style="margin-top:16px">Tingkat lawan</h2>
+    <div class="diff" id="diff"></div></div>
+  </div>
+  <div class="sticky-go">
+    <button class="btn ghost" id="b-back">◀</button>
+    <button class="btn ghost" id="b-rand">🎲 Acak</button>
+    <button class="btn pink" id="b-fight">TARUNG! 🥊</button>
+  </div>
+</section>
+
+<div class="hud" id="hud" hidden>
+  <div class="side l"><img id="h-f1" alt=""><div class="bars"><div class="nm" id="h-n1"></div><div class="hp"><b id="h-d1"></b><i id="h-hp1"></i></div><div class="mp" id="h-mpw1"><i id="h-mp1"></i></div><div class="wins" id="h-w1"></div></div></div>
+  <div class="mid"><div class="clock" id="h-clock">60</div><button class="pause" id="b-pause" aria-label="Jeda">⏸</button></div>
+  <div class="side r"><img id="h-f2" alt=""><div class="bars"><div class="nm" id="h-n2"></div><div class="hp"><b id="h-d2"></b><i id="h-hp2"></i></div><div class="mp" id="h-mpw2"><i id="h-mp2"></i></div><div class="wins" id="h-w2"></div></div></div>
+</div>
+<div id="pads"></div>
+
+<section class="screen" id="s-pause" hidden style="justify-content:center">
+  <h2>Jeda ✋</h2>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+    <button class="btn" id="b-resume">Lanjut</button>
+    <button class="btn ghost" id="b-quit">Keluar</button>
+  </div>
+</section>
+
+<section class="screen" id="s-result" hidden>
+  <img class="result-face" id="r-face" alt="">
+  <div class="big" id="r-big"></div>
+  <div class="sub" id="r-sub"></div>
+  <div class="ladder" id="r-ladder"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+    <button class="btn pink" id="b-next">Lanjut</button>
+    <button class="btn" id="b-again">Main lagi</button>
+    <button class="btn ghost" id="b-menu">Menu</button>
+  </div>
+</section>
+
+<div class="err" id="err" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="characters.js"></script>
+<script src="brawl.js"></script>
+</body>
+</html>

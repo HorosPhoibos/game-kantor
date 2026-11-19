@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#3b2a6b">
+<title>Ring Kantor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+:root { --ink: #1d1530; --paper: #fff8ec; --sun: #ffcf3f; --blue: #3a7bff; --red: #ff4a5a; --green: #22c27a; --shadow: 0 4px 0 var(--ink); --pix: "Silkscreen", "Fredoka", monospace; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #3b2a6b; color: var(--ink); font-family: "Fredoka", system-ui, sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
+canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: grab; }
+canvas#game:active { cursor: grabbing; }
+.btn { border: 3px solid var(--ink); border-radius: 14px; background: var(--sun); box-shadow: var(--shadow); padding: 12px 22px; font-size: 20px; font-weight: 700; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn.ghost { background: #fff; }
+.btn.red { background: var(--red); color: #fff; }
+.btn:disabled { opacity: .5; }
+a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top)); left: 10px; background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 6px 12px; font-weight: 700; color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--ink); }
+
+.screen { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; overflow-y: auto; padding: max(18px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom)); background: rgba(40, 26, 80, .82); color: #fff; backdrop-filter: blur(3px); touch-action: pan-y; }
+.screen h1 { margin: 40px 0 0; font-family: var(--pix); font-size: clamp(40px, 10vw, 78px); line-height: 1; text-align: center; color: var(--sun); text-shadow: 4px 4px 0 var(--ink); }
+.screen h2 { margin: 6px 0 10px; font-size: clamp(22px, 5.5vw, 30px); text-align: center; }
+.tag { margin: 12px 0 18px; font-size: 18px; font-weight: 500; text-align: center; max-width: 540px; line-height: 1.4; }
+.card { width: 100%; max-width: 640px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 18px; padding: 12px 14px; box-shadow: 0 5px 0 var(--ink); margin-bottom: 12px; }
+.modes { display: grid; gap: 12px; width: 100%; max-width: 460px; }
+.modes button { color: var(--ink); text-align: left; display: flex; gap: 14px; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 18px; padding: 12px 16px; box-shadow: 0 5px 0 var(--ink); }
+.modes b { display: block; font-size: 21px; }
+.modes small { font-size: 15px; font-weight: 500; }
+.modes .ic { font-size: 36px; }
+.opts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+.chip { background: #fff; color: var(--ink); border: 3px solid var(--ink); border-radius: 99px; padding: 6px 14px; font-size: 15px; font-weight: 700; }
+.chip[aria-pressed="true"] { background: var(--sun); }
+.disclaimer { font-size: 13px; opacity: .8; margin-top: 14px; text-align: center; max-width: 480px; }
+
+.vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; width: 100%; max-width: 640px; margin-bottom: 10px; }
+.corner { background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 18px; padding: 8px; text-align: center; box-shadow: 0 4px 0 var(--ink); }
+.corner.blue { border-color: var(--blue); } .corner.red { border-color: var(--red); }
+.corner img { width: 84px; height: 104px; object-fit: cover; border-radius: 50%; border: 4px solid var(--ink); background: #fff; }
+.corner b { display: block; font-size: 19px; }
+.corner .odds { display: inline-block; margin-top: 3px; background: var(--ink); color: var(--sun); border-radius: 99px; padding: 1px 10px; font-weight: 700; font-size: 15px; }
+.vs-mid { font-family: var(--pix); font-size: 28px; color: var(--sun); text-shadow: 3px 3px 0 var(--ink); }
+.stats { margin-top: 6px; display: grid; gap: 2px; text-align: left; }
+.st { display: grid; grid-template-columns: 62px 1fr; gap: 6px; align-items: center; font-size: 12px; font-weight: 700; }
+.st i { display: block; height: 9px; border: 2px solid var(--ink); border-radius: 99px; background: linear-gradient(90deg, var(--green) var(--v), #eee var(--v)); }
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; width: 100%; max-width: 760px; }
+.pf { background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; padding: 6px 4px; text-align: center; font-size: 14px; font-weight: 700; position: relative; }
+.pf img { width: 60px; height: 74px; object-fit: cover; border-radius: 50%; border: 3px solid var(--ink); display: block; margin: 0 auto 2px; background: #fff; }
+.pf small { display: block; font-size: 11px; font-weight: 600; opacity: .75; }
+.pf.blue { background: #cfe0ff; } .pf.red { background: #ffd0d5; }
+.pf .tagc { position: absolute; top: 3px; left: 3px; font-size: 11px; color: #fff; border: 2px solid var(--ink); border-radius: 99px; padding: 0 6px; }
+.pf.blue .tagc { background: var(--blue); } .pf.red .tagc { background: var(--red); }
+.sticky { position: sticky; bottom: 0; padding: 12px 0 4px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+.bets { display: grid; gap: 6px; margin-top: 8px; }
+.bet { display: flex; align-items: center; gap: 8px; background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 4px 8px; font-size: 14px; font-weight: 600; }
+.bet img { width: 34px; height: 42px; object-fit: cover; border-radius: 50%; border: 2px solid var(--ink); }
+.bet .x { margin-left: auto; border: 2px solid var(--ink); border-radius: 8px; background: #fff; font-weight: 700; padding: 0 8px; }
+.bet .res { margin-left: auto; font-weight: 700; }
+.bet .res.win { color: #149a5c; } .bet .res.lose { color: #d0303f; }
+.who { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; margin-top: 6px; }
+.who button { background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 3px; font-size: 12px; font-weight: 700; line-height: 1.1; }
+.who img { width: 44px; height: 54px; object-fit: cover; border-radius: 50%; border: 2px solid var(--ink); display: block; margin: 0 auto 1px; }
+.who small { display: block; font-size: 10px; color: #6a5a20; }
+
+.modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(20,12,40,.6); padding: 14px; }
+.modal .card { max-width: 420px; }
+.modal h3 { margin: 0 0 6px; font-size: 21px; display: flex; gap: 10px; align-items: center; }
+.modal h3 img { width: 48px; height: 58px; object-fit: cover; border-radius: 50%; border: 3px solid var(--ink); }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
+.seg button { flex: 1; min-width: 70px; background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 8px 6px; font-weight: 700; font-size: 15px; }
+.seg button[aria-pressed="true"] { background: var(--sun); }
+.seg button.blue[aria-pressed="true"] { background: var(--blue); color: #fff; }
+.seg button.red[aria-pressed="true"] { background: var(--red); color: #fff; }
+.lbl { font-size: 14px; font-weight: 700; margin-top: 4px; }
+.payout { font-size: 15px; font-weight: 600; background: #fff3c4; border-radius: 10px; padding: 6px 10px; margin-bottom: 10px; }
+
+/* HUD tanding */
+.hud { position: fixed; z-index: 5; left: 0; right: 0; top: max(8px, env(safe-area-inset-top)); display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; padding: 0 10px; pointer-events: none; color: #fff; }
+.plate { display: flex; gap: 8px; align-items: center; }
+.plate.r { flex-direction: row-reverse; text-align: right; }
+.plate img { width: 54px; height: 66px; object-fit: cover; border-radius: 50%; border: 4px solid var(--blue); background: #fff; flex: none; }
+.plate.r img { border-color: var(--red); }
+.plate .bars { flex: 1; min-width: 0; }
+.plate .nm { font-family: var(--pix); font-size: 15px; text-shadow: 2px 2px 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { height: 16px; border: 3px solid var(--ink); background: #3a1424; position: relative; overflow: hidden; }
+.bar i { position: absolute; top: 0; bottom: 0; left: 0; background: #5cf08a; }
+.plate.r .bar i { left: auto; right: 0; }
+.bar.sta { height: 9px; margin-top: 3px; background: #1d2a4a; }
+.bar.sta i { background: #ffcf3f; }
+.kd { font-size: 13px; font-weight: 700; height: 16px; }
+.center { text-align: center; font-family: var(--pix); }
+.center .rd { font-size: 14px; text-shadow: 2px 2px 0 var(--ink); }
+.center .clk { background: var(--ink); color: var(--sun); border: 3px solid #fff; padding: 0 8px; font-size: 24px; }
+.feed { position: fixed; z-index: 5; left: 10px; bottom: max(70px, calc(env(safe-area-inset-bottom) + 64px)); max-width: min(520px, calc(100vw - 20px)); pointer-events: none; display: flex; flex-direction: column; gap: 4px; }
+.feed div { background: rgba(29,21,48,.82); color: #fff; border-left: 5px solid var(--sun); padding: 4px 10px; font-size: 15px; font-weight: 600; animation: slide .3s ease-out; }
+.feed div.big { border-left-color: var(--red); font-size: 17px; }
+.feed div.old { opacity: .55; }
+@keyframes slide { from { transform: translateX(-20px); opacity: 0; } }
+.ctrl { position: fixed; z-index: 6; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.ctrl button { background: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink); font-weight: 700; font-size: 15px; min-width: 46px; height: 46px; padding: 0 10px; }
+.ctrl button[aria-pressed="true"] { background: var(--sun); }
+.mybet { position: fixed; z-index: 5; right: 10px; top: calc(max(8px, env(safe-area-inset-top)) + 96px); background: rgba(255,248,236,.92); border: 3px solid var(--ink); border-radius: 12px; padding: 4px 10px; font-size: 13px; font-weight: 700; pointer-events: none; max-width: 200px; }
+
+.announce { position: fixed; z-index: 9; left: 50%; top: 38%; transform: translate(-50%, -50%); font-family: var(--pix); font-size: clamp(36px, 10vw, 90px); color: var(--sun); text-shadow: 5px 5px 0 var(--ink); pointer-events: none; text-align: center; white-space: nowrap; animation: slam .45s cubic-bezier(.3,1.6,.6,1); }
+.announce small { display: block; font-size: .32em; color: #fff; }
+@keyframes slam { from { transform: translate(-50%, -50%) scale(2.2); opacity: 0; } }
+
+.rest { position: fixed; z-index: 12; left: 50%; bottom: max(70px, calc(env(safe-area-inset-bottom) + 64px)); transform: translateX(-50%); width: min(620px, calc(100vw - 20px)); background: var(--paper); border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); padding: 10px 12px; }
+.rest h3 { margin: 0 0 6px; font-size: 19px; display: flex; justify-content: space-between; }
+.rest .row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.rest .row img { width: 38px; height: 46px; object-fit: cover; border-radius: 50%; border: 3px solid var(--blue); }
+.rest .row.red img { border-color: var(--red); }
+.rest .row .chip { padding: 4px 10px; font-size: 13px; }
+.rest .tip { font-size: 13px; font-weight: 600; opacity: .8; }
+
+.result-face { width: 140px; height: 172px; object-fit: cover; border-radius: 50%; border: 6px solid var(--sun); background: #fff; margin-top: 34px; }
+.big { font-family: var(--pix); font-size: clamp(28px, 7vw, 50px); color: var(--sun); text-shadow: 4px 4px 0 var(--ink); text-align: center; margin: 10px 0 2px; }
+.how { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 10px; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 6px; }
+.cards div { background: #fff; border: 2px solid var(--ink); border-radius: 10px; text-align: center; font-size: 13px; font-weight: 700; padding: 4px; }
+.lead { display: grid; gap: 4px; }
+.lead div { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+.lead img { width: 34px; height: 42px; object-fit: cover; border-radius: 50%; border: 2px solid var(--ink); }
+.lead span { margin-left: auto; }
+.bracket { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; width: 100%; }
+.bracket .col { display: grid; gap: 6px; }
+.bm { background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 3px 5px; font-size: 12px; font-weight: 700; }
+.bm div { display: flex; gap: 4px; align-items: center; }
+.bm img { width: 22px; height: 27px; object-fit: cover; border-radius: 50%; border: 1px solid var(--ink); }
+.bm .w { color: #149a5c; } .bm .l { opacity: .45; text-decoration: line-through; }
+.bm.now { background: var(--sun); }
+.err { position: fixed; z-index: 99; left: 16px; right: 16px; bottom: 16px; background: #fff; border: 3px solid var(--red); border-radius: 14px; padding: 10px 14px; font-weight: 600; }
+@media (max-width: 640px) {
+  .plate img { width: 40px; height: 50px; }
+  .plate .nm { font-size: 11px; }
+  .center .clk { font-size: 18px; }
+  .feed div { font-size: 13px; }
+  .feed div.old { display: none; }
+  .ctrl button { height: 42px; min-width: 40px; font-size: 13px; padding: 0 7px; }
+  .mybet { top: auto; bottom: max(170px, calc(env(safe-area-inset-bottom) + 160px)); }
+}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Diorama ring tinju 3D"></canvas>
+<a class="back" href="index.html" id="back">◀ Menu</a>
+
+<section class="screen" id="s-title">
+  <h1>RING<br>KANTOR</h1>
+  <p class="tag">Tinju otomatis di atap gudang. Tonton, atur strategi dari pojok, dan tebak siapa juaranya pakai poin!</p>
+  <div class="modes">
+    <button data-go="exhib"><span class="ic">🥊</span><span><b>Tanding Eksibisi</b><small>Pilih 2 petinju, pasang taruhan, tonton</small></span></button>
+    <button data-go="tour"><span class="ic">🏆</span><span><b>Turnamen 8 Orang</b><small>Tebak juara, tonton sampai final</small></span></button>
+    <button data-go="wallet"><span class="ic">💰</span><span><b>Dompet & Peringkat</b><small>Siapa paling jago nebak?</small></span></button>
+  </div>
+  <div class="opts">
+    <span style="font-weight:700">Ronde:</span>
+    <button class="chip" data-rounds="3">3</button><button class="chip" data-rounds="5">5</button>
+    <span style="font-weight:700;margin-left:8px">Pixel:</span>
+    <button class="chip" data-px="1">Halus</button><button class="chip" data-px="2">Pixel</button><button class="chip" data-px="3">Jadul</button>
+    <button class="chip" id="opt-sound">🔊 Suara</button>
+  </div>
+  <p class="disclaimer">Taruhannya pakai <b>Poin Kantor</b> bohongan, bukan uang. Tiap orang mulai dengan 1.000 poin.</p>
+</section>
+
+<section class="screen" id="s-pick" hidden>
+  <h2 id="pick-title">Pilih petinju</h2>
+  <div class="pick-grid" id="pick-grid"></div>
+  <div class="sticky">
+    <button class="btn ghost" id="pick-back">◀</button>
+    <button class="btn ghost" id="pick-rand">🎲 Acak</button>
+    <button class="btn" id="pick-ok">Lanjut ▶</button>
+  </div>
+</section>
+
+<section class="screen" id="s-bet" hidden>
+  <h2 id="bet-title">Pasang Taruhan</h2>
+  <div class="vs" id="bet-vs"></div>
+  <div class="card">
+    <b>Siapa yang mau taruhan?</b> <small>Ketuk wajahmu, lalu pilih jagoan.</small>
+    <div class="who" id="bet-who"></div>
+    <div class="bets" id="bet-list"></div>
+  </div>
+  <div class="sticky">
+    <button class="btn ghost" id="bet-back">◀</button>
+    <button class="btn red" id="bet-go">Mulai Tanding 🔔</button>
+  </div>
+</section>
+
+<section class="screen" id="s-tour" hidden>
+  <h2 id="tour-title">Turnamen</h2>
+  <div class="card"><div class="bracket" id="bracket"></div></div>
+  <div class="card" id="champ-card">
+    <b>🔮 Tebak Juara</b> <small id="champ-sub">Ketuk wajahmu, lalu pilih siapa yang bakal juara.</small>
+    <div class="who" id="champ-who"></div>
+    <div class="bets" id="champ-list"></div>
+  </div>
+  <div class="sticky">
+    <button class="btn ghost" id="tour-quit">Keluar</button>
+    <button class="btn red" id="tour-go">Pertandingan Berikutnya ▶</button>
+  </div>
+</section>
+
+<section class="screen" id="s-wallet" hidden>
+  <h2>💰 Peringkat Poin Kantor</h2>
+  <div class="card"><div class="lead" id="lead"></div></div>
+  <div class="sticky">
+    <button class="btn ghost" id="wallet-back">◀ Kembali</button>
+    <button class="btn ghost" id="wallet-reset">Reset semua poin</button>
+  </div>
+</section>
+
+<div class="hud" id="hud" hidden>
+  <div class="plate"><img id="h-f0" alt=""><div class="bars"><div class="nm" id="h-n0"></div><div class="bar"><i id="h-hp0"></i></div><div class="bar sta"><i id="h-st0"></i></div><div class="kd" id="h-kd0"></div></div></div>
+  <div class="center"><div class="rd" id="h-rd">RONDE 1</div><div class="clk" id="h-clk">1:00</div></div>
+  <div class="plate r"><img id="h-f1" alt=""><div class="bars"><div class="nm" id="h-n1"></div><div class="bar"><i id="h-hp1"></i></div><div class="bar sta"><i id="h-st1"></i></div><div class="kd" id="h-kd1"></div></div></div>
+</div>
+<div class="mybet" id="mybet" hidden></div>
+<div class="feed" id="feed" hidden></div>
+<div class="ctrl" id="ctrl" hidden>
+  <button id="c-pause" aria-label="Jeda">⏸</button>
+  <button data-spd="1" aria-pressed="true">1×</button><button data-spd="2">2×</button><button data-spd="4">4×</button>
+  <button id="c-rotl" aria-label="Putar kiri">⟲</button><button id="c-rotr" aria-label="Putar kanan">⟳</button>
+  <button id="c-zin" aria-label="Perbesar">＋</button><button id="c-zout" aria-label="Perkecil">－</button>
+  <button id="c-follow" aria-pressed="true">🎥 Ikuti</button>
+  <button id="c-quit">✖</button>
+</div>
+<div class="rest" id="rest" hidden></div>
+
+<div class="modal" id="modal" hidden><div class="card" id="modal-card"></div></div>
+
+<section class="screen" id="s-result" hidden>
+  <img class="result-face" id="r-face" alt="">
+  <div class="big" id="r-big"></div>
+  <div class="how" id="r-how"></div>
+  <div class="card" id="r-cards-wrap"><b>Kartu juri</b><div class="cards" id="r-cards"></div></div>
+  <div class="card" id="r-bets-wrap"><b>Hasil taruhan</b><div class="bets" id="r-bets"></div></div>
+  <div class="sticky">
+    <button class="btn red" id="r-next">Lanjut ▶</button>
+    <button class="btn" id="r-again">Tanding lagi</button>
+    <button class="btn ghost" id="r-menu">Menu</button>
+  </div>
+</section>
+
+<div class="err" id="err" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="characters.js"></script>
+<script src="ring.js"></script>
+</body>
+</html>
