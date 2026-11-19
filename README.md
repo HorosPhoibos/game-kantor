@@ -1,9 +1,11 @@
 # Game Kantor
 
-Empat game browser dengan wajah teman kantor:
+Game browser dengan wajah teman kantor:
 - **Ring Kantor** (`ring.html`): smackdown otomatis. Duel atau tawuran 3–8 orang di 5 arena (ring, gudang, kolam, warung, parkiran). Banting, suplex, lempar keluar arena, hantam pakai barang kantor, jurus khas tiap orang. Tonton, atur strategi, dan taruhan pakai Poin Kantor.
 - **Antar Rakit** (`antar.html`): antar komputer ke klien, cukup ketuk. Awas mobil nyelonong: telat ngerem = bayar ganti rugi.
 - **Office Brawl** (`brawl.html`): adu jotos yang dimainkan sendiri, 1 lawan 1 atau tawuran.
+- **Basket Kantor** (`basket.html`): streetball 3 lawan 3 otomatis, siang-malam, hujan, taruhan tim.
+- **Tenis Kantor** (`tenis.html`): kompleks 4 lapangan (tanah liat, rumput, keras, karpet), skor tenis lengkap, suara wasit, taruhan.
 - **Hoki Kantor** (`hoki.html`): mesin hoki bergambar teman kantor (8 sama di mana saja, tumble, SK Naik Gaji = putaran gratis, Amplop THR = pengali). Poin bohongan, sama dengan dompet Ring Kantor.
 
 Halaman depan `index.html` untuk memilih game.

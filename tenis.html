@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2b6b3a">
+<title>Tenis Kantor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Silkscreen&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kantor.css">
+<style>
+.sb { position: fixed; z-index: 5; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: #14361f; color: #fff; border: 4px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); font-family: var(--pix); pointer-events: none; overflow: hidden; min-width: 280px; }
+.sb .row { display: grid; grid-template-columns: 34px 1fr auto auto 46px; align-items: center; gap: 6px; padding: 3px 8px; }
+.sb .row + .row { border-top: 2px solid rgba(255,255,255,.15); }
+.sb img { width: 30px; height: 36px; object-fit: cover; border-radius: 50%; border: 2px solid #fff; background: #fff; }
+.sb .nm { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb .srv { color: var(--sun); font-size: 12px; width: 14px; }
+.sb .sets { display: flex; gap: 4px; font-size: 16px; }
+.sb .sets span { min-width: 14px; text-align: center; opacity: .75; }
+.sb .sets span.cur { opacity: 1; color: var(--sun); }
+.sb .pt { background: var(--sun); color: var(--ink); text-align: center; font-size: 17px; border-radius: 6px; }
+.sb .call { background: #0e2616; color: var(--sun); text-align: center; font-size: 12px; padding: 2px 6px; min-height: 18px; }
+.pickrow { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 4px 0 10px; }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Diorama kompleks tenis 3D"></canvas>
+<a class="back" href="index.html" id="back">◀ Menu</a>
+
+<section class="screen" id="s-title">
+  <h1>TENIS<br>KANTOR</h1>
+  <p class="tag">Kompleks tenis mini dengan 4 lapangan. Tonton pertandingan lengkap dari siang sampai malam, dan tebak juaranya pakai poin!</p>
+  <div class="modes">
+    <button id="go-pick"><span class="ic">🎾</span><span><b>Pilih Pemain</b><small>Tentukan siapa lawan siapa</small></span></button>
+    <button id="go-rand"><span class="ic">🎲</span><span><b>Pemain Acak</b><small>Langsung kocok 2 pemain</small></span></button>
+  </div>
+  <div class="opts" id="opt-surf"></div>
+  <div class="opts">
+    <span style="font-weight:700">Format:</span>
+    <button class="chip" data-fmt="4">1 set · 4 game</button><button class="chip" data-fmt="6">1 set · 6 game</button><button class="chip" data-fmt="b3">2 set menang · 4 game</button>
+  </div>
+  <div class="opts">
+    <button class="chip" data-px="1">Halus</button><button class="chip" data-px="2">Pixel</button>
+    <button class="chip" id="opt-sound">🔊 Suara</button>
+    <button class="chip" id="opt-speak">🗣️ Suara wasit</button>
+  </div>
+  <p class="disclaimer">Taruhan pakai <b>Poin Kantor</b> bohongan (dompetnya sama dengan Ring Kantor & Hoki Kantor).</p>
+</section>
+
+<section class="screen" id="s-pick" hidden>
+  <h2 id="pick-title">Pilih 2 pemain</h2>
+  <div class="pick-grid" id="pick-grid"></div>
+  <div class="sticky">
+    <button class="btn ghost" id="pick-back">◀</button>
+    <button class="btn ghost" id="pick-rand">🎲 Acak</button>
+    <button class="btn" id="pick-ok">Lanjut ▶</button>
+  </div>
+</section>
+
+<section class="screen" id="s-bet" hidden>
+  <h2 id="bet-title">Pasang Taruhan</h2>
+  <div class="teams" id="bet-teams"></div>
+  <div class="card">
+    <b>Siapa yang mau taruhan?</b> <small>Ketuk wajahmu, lalu pilih pemain.</small>
+    <div class="who" id="bet-who"></div>
+    <div class="bets" id="bet-list"></div>
+  </div>
+  <div class="sticky">
+    <button class="btn ghost" id="bet-back">◀</button>
+    <button class="btn red" id="bet-go">Mulai Main 🎾</button>
+  </div>
+</section>
+
+<div class="sb" id="sb" hidden>
+  <div class="row"><img id="sb-f0" alt=""><span class="nm" id="sb-n0"></span><span class="srv" id="sb-s0"></span><span class="sets" id="sb-g0"></span><span class="pt" id="sb-p0">0</span></div>
+  <div class="row"><img id="sb-f1" alt=""><span class="nm" id="sb-n1"></span><span class="srv" id="sb-s1"></span><span class="sets" id="sb-g1"></span><span class="pt" id="sb-p1">0</span></div>
+  <div class="call" id="sb-call"></div>
+</div>
+<div class="feed" id="feed" hidden></div>
+<div class="ctrl" id="ctrl" hidden>
+  <button id="c-pause" aria-label="Jeda">⏸</button>
+  <button data-spd="1" aria-pressed="true">1×</button><button data-spd="2">2×</button><button data-spd="4">4×</button>
+  <label>🌗<input type="range" id="c-time" min="0" max="1" step="0.01" value="0.3" aria-label="Waktu"></label>
+  <button id="c-auto" aria-pressed="true">⏱ Auto</button>
+  <button id="c-rain" aria-pressed="false">🌧️ Hujan</button>
+  <button id="c-rot" aria-label="Putar kamera">⟳</button>
+  <button id="c-zin" aria-label="Perbesar">＋</button><button id="c-zout" aria-label="Perkecil">－</button>
+  <button id="c-quit">✖</button>
+</div>
+
+<div class="modal" id="modal" hidden><div class="card" id="modal-card"></div></div>
+
+<section class="screen" id="s-result" hidden>
+  <img class="result-face" id="r-face" alt="">
+  <div class="big" id="r-big"></div>
+  <div class="how" id="r-how"></div>
+  <div class="card"><b>Statistik</b><div class="lead" id="r-box"></div></div>
+  <div class="card" id="r-bets-wrap"><b>Hasil taruhan</b><div class="bets" id="r-bets"></div></div>
+  <div class="sticky">
+    <button class="btn" id="r-again">Main lagi</button>
+    <button class="btn ghost" id="r-menu">Menu</button>
+  </div>
+</section>
+
+<div class="err" id="err" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="characters.js"></script>
+<script src="kantor3d.js"></script>
+<script src="tenis.js"></script>
+</body>
+</html>
