@@ -590,11 +590,13 @@
   const camTarget = new THREE.Vector3(0, RING_Y + 1.5, 0);
   function resize() {
     const w = innerWidth, h = innerHeight;
+    if (!w || !h) return;               // jendela tersembunyi: jangan rusak ukuran kamera
     renderer.setSize(w, h, false);
     renderer.setPixelRatio(S.px === 1 ? Math.min(devicePixelRatio || 1, 2) : 1 / S.px);
     updateCam();
   }
   function updateCam() {
+    if (!innerWidth || !innerHeight) return;
     const asp = innerWidth / innerHeight;
     const z = S.zoom * (asp < 1 ? 1.35 / Math.max(asp, 0.45) * 0.6 : 1);
     camera.left = -z * asp; camera.right = z * asp; camera.top = z; camera.bottom = -z; camera.updateProjectionMatrix();

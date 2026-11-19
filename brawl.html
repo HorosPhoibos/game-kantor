@@ -109,6 +109,14 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
 .ladder img { width: 52px; height: 64px; object-fit: cover; border-radius: 50%; border: 3px solid var(--ink); display: block; margin: 0 auto 2px; background: #fff; }
 .ladder .beat img { filter: grayscale(1); opacity: .6; }
 .ladder .now img { border-color: var(--pink); transform: scale(1.12); }
+.roster { position: fixed; z-index: 5; left: 50%; transform: translateX(-50%); top: calc(max(8px, env(safe-area-inset-top)) + 96px); display: flex; gap: 5px; pointer-events: none; }
+.rs { width: 46px; text-align: center; }
+.rs img { width: 40px; height: 50px; object-fit: cover; border-radius: 50%; border: 3px solid var(--ink); background: #fff; display: block; margin: 0 auto; }
+.rs.me img { border-color: var(--blue); }
+.rs i { display: block; height: 7px; border: 2px solid var(--ink); border-radius: 99px; background: #4a1a2a; overflow: hidden; margin-top: 2px; }
+.rs i b { display: block; height: 100%; background: #5cf08a; }
+.rs.ko { opacity: .45; filter: grayscale(1); }
+@media (max-width: 640px) { .roster { top: calc(max(8px, env(safe-area-inset-top)) + 70px); gap: 3px; } .rs { width: 38px; } .rs img { width: 32px; height: 40px; } }
 .err { position: fixed; z-index: 99; left: 16px; right: 16px; bottom: 16px; background: #fff; border: 3px solid var(--red); border-radius: 14px; padding: 10px 14px; font-weight: 600; }
 @media (max-width: 640px) {
   .side img { width: 46px; height: 56px; }
@@ -130,6 +138,7 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
   <div class="modes">
     <button data-mode="cpu"><span class="ic">🤖</span><span><b>Lawan Komputer</b><small>Main sendiri, pilih lawanmu</small></span></button>
     <button data-mode="tour"><span class="ic">🏆</span><span><b>Turnamen</b><small>Kalahkan 4 orang berturut-turut</small></span></button>
+    <button data-mode="ffa"><span class="ic">🔥</span><span><b>Tawuran</b><small>3–8 jagoan sekaligus, yang terakhir berdiri menang</small></span></button>
     <button data-mode="2p"><span class="ic">👥</span><span><b>2 Pemain</b><small>Berdua di satu laptop / tablet</small></span></button>
   </div>
   <div class="keys">
@@ -147,6 +156,11 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
   <h2 id="pick-title">Pilih jagoanmu</h2>
   <div class="pick-status" id="pick-status"></div>
   <div class="grid" id="grid"></div>
+  <div id="ffa-wrap" hidden>
+    <h2 style="margin-top:16px">Berapa orang?</h2>
+    <div class="diff" id="ffa-n"></div>
+    <div class="diff" id="ffa-h" style="margin-top:8px"></div>
+  </div>
   <div id="pick-extra">
     <h2 style="margin-top:16px">Arena</h2>
     <div class="arenas" id="arenas"></div>
@@ -165,6 +179,7 @@ a.back { position: fixed; z-index: 30; top: max(10px, env(safe-area-inset-top));
   <div class="mid"><div class="clock" id="h-clock">60</div><button class="pause" id="b-pause" aria-label="Jeda">⏸</button></div>
   <div class="side r"><img id="h-f2" alt=""><div class="bars"><div class="nm" id="h-n2"></div><div class="hp"><b id="h-d2"></b><i id="h-hp2"></i></div><div class="mp" id="h-mpw2"><i id="h-mp2"></i></div><div class="wins" id="h-w2"></div></div></div>
 </div>
+<div class="roster" id="roster" hidden></div>
 <div id="pads"></div>
 
 <section class="screen" id="s-pause" hidden style="justify-content:center">

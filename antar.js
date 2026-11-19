@@ -1105,6 +1105,7 @@
   let viewH = 22;
   function resize() {
     const w = innerWidth, h = innerHeight;
+    if (!w || !h) return;               // jendela tersembunyi: jangan rusak ukuran kamera
     renderer.setSize(w, h, false);
     const asp = w / h;
     viewH = clamp(asp < 1 ? (24 / asp) * 0.62 : 21, 19, 34);

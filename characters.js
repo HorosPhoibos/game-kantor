@@ -27,6 +27,7 @@ window.CREW = [
   { id: "hery",   name: "Hery",     shirt: "#d8283a", skin: "#a87660", skill: "teknisi", skillName: "Teknisi Andalan" },
   { id: "heriw",  name: "Heri Warung", shirt: "#e9e4dc", skin: "#9a6448", skill: "tikus", skillName: "Tau Warung Tiap Gang" },
   { id: "ali",    name: "Ali",      shirt: "#f2f5ee", skin: "#a06c55", skill: "halus",   skillName: "Muka Serius, Nyetir Rapi" },
+  { id: "topik",  name: "Topik",    shirt: "#efe3ec", skin: "#a8775f", skill: "teknisi", skillName: "Hacker Kantor" },
 ];
 
 // ============================================================
@@ -56,4 +57,5 @@ window.BRAWL = {
   hery:   { type: "drop", obj: "printer",   name: "Printer Macet Jatuh",   pants: "#f2f2f2", say: "Kertasnya nyangkut!" },
   heriw:  { type: "proj", obj: "gorengan",  name: "Lempar Gorengan Panas", pants: "#3a3a40", say: "Masih anget nih!" },
   ali:    { type: "drop", obj: "stamp",     name: "Stempel ACC Raksasa",   pants: "#3a4a3a", say: "Di-ACC!" },
+  topik:  { type: "stun", obj: "laptop",    name: "Hack Sistem Lawan",     pants: "#2b3350", say: "Akses diterima! 💻" },
 };

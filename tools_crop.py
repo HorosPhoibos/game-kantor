@@ -19,6 +19,7 @@ CROPS = {
   "hery":    ("hery.jpg", 102, 15, 115),
   "heriw":   ("heriwarung.jpg", 240, 80, 150),
   "ali":     ("ali.jpg", 252, 60, 230),
+  "topik":   ("topik.png", 207, 52, 165),
 }
 W, H = 256, 320
 mask = Image.new("L", (W, H), 0)

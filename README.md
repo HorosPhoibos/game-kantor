@@ -35,3 +35,4 @@ Orang yang fotonya belum ada di `faces/` disembunyikan otomatis dari game.
 - Keyboard pemain 1: A/D jalan, F pukul, G tendang, S tangkis, R jurus.
 - Keyboard pemain 2: ←/→ jalan, K pukul, L tendang, ↓ tangkis, O jurus.
 - Mode gampang (default nyala): jagoan jalan sendiri mendekati lawan.
+- Mode Tawuran: 3–8 jagoan sekaligus (1–2 pemain, sisanya komputer). Yang terakhir berdiri menang.

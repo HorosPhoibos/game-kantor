@@ -235,14 +235,14 @@
   };
   function objFor(name) {
     if (OBJ[name]) return OBJ[name]();
-    const em = { heart: "💖", thumb: "👍", eye: "👁️", clock: "⏱️", kentongan: "🔔", laugh: "😆", cable: "🔌", batik: "🌀" }[name] || "⭐";
+    const em = { laptop: "💻", heart: "💖", thumb: "👍", eye: "👁️", clock: "⏱️", kentongan: "🔔", laugh: "😆", cable: "🔌", batik: "🌀" }[name] || "⭐";
     return emojiSprite(em, 2.2);
   }
 
   // ---------------- state ----------------
   const G = {
     state: "menu", mode: "cpu", easy: store.get("br_easy", true), diff: store.get("br_diff", "normal"), arena: "random",
-    p1: null, p2: null, step: 1, f: [], round: 1, clock: ROUND_TIME, slow: 1, tour: null, timers: [], fx: [], projs: [], shake: 0, run: 0,
+    p1: null, p2: null, step: 1, ffaN: store.get("br_ffaN", 6), ffaH: 1, twoHuman: false, elim: [], hudF: [], f: [], round: 1, clock: ROUND_TIME, slow: 1, tour: null, timers: [], fx: [], projs: [], shake: 0, run: 0,
   };
   function later(sec, fn) { G.timers.push({ t: sec, fn, run: G.run }); }
 
@@ -253,18 +253,33 @@
     return f;
   }
   function resetRound() {
+    const N = G.f.length, B = bound();
     G.f.forEach((f, i) => {
-      Object.assign(f, { x: i === 0 ? -3.5 : 3.5, vx: 0, face: i === 0 ? 1 : -1, hp: HP, shownHp: HP, st: "idle", t: 0, move: null, hitDone: false, cast: false });
+      const x = N === 2 ? (i === 0 ? -3.5 : 3.5) : -B * 0.75 + i * ((1.5 * B) / (N - 1));
+      Object.assign(f, { x, vx: 0, face: x < 0 ? 1 : -1, hp: HP, shownHp: HP, st: "idle", t: 0, move: null, hitDone: false, cast: false });
+      f.z = N === 2 ? 0 : (i % 2 ? -0.8 : 0.8); f.m.root.position.z = f.z;
       f.ctrl.queue.length = 0; f.ai.blockT = 0;
       f.m.body.rotation.set(0, 0, 0); f.m.body.position.set(0, 0, 0); f.m.stars.visible = false;
     });
     G.projs.forEach((p) => scene.remove(p.mesh)); G.projs = [];
     G.fx.forEach((e) => scene.remove(e.o)); G.fx = [];
-    G.clock = ROUND_TIME; G.slow = 1;
+    G.clock = ffa() ? 99 : ROUND_TIME; G.slow = 1;
   }
   const canAct = (f) => f.st === "idle" || f.st === "walk" || f.st === "block";
-  const other = (f) => (G.f[0] === f ? G.f[1] : G.f[0]);
-  const bound = () => (camera.aspect < 1 ? 6 : 10);
+  const ffa = () => G.mode === "ffa";
+  const alive = () => G.f.filter((f) => f.st !== "ko");
+  // lawan terdekat yang masih berdiri (mode tawuran bisa banyak lawan)
+  const other = (f) => {
+    let best = null, bd = 1e9;
+    G.f.forEach((o) => { if (o === f || o.st === "ko") return; const d = Math.abs(o.x - f.x); if (d < bd) { bd = d; best = o; } });
+    return best || G.f.find((o) => o !== f) || f;
+  };
+  const targetInFront = (f, range) => {
+    let best = null, bd = 1e9;
+    G.f.forEach((o) => { if (o === f || o.st === "ko") return; const dx = o.x - f.x; if (Math.sign(dx) === f.face && Math.abs(dx) <= range && Math.abs(dx) < bd) { bd = Math.abs(dx); best = o; } });
+    return best;
+  };
+  const bound = () => (ffa() ? (camera.aspect < 1 ? 8 : 13) : (camera.aspect < 1 ? 6 : 10));
 
   // ---------------- efek ----------------
   function spark(x, y, text, color) {
@@ -312,7 +327,7 @@
     f.st = "atk"; f.t = 0; f.move = MOVES[k]; f.moveK = k; f.hitDone = false; sfx.whoosh();
   }
   function startSpecial(f) {
-    f.st = "special"; f.t = 0; f.cast = false; f.meter = 0;
+    f.st = "special"; f.t = 0; f.cast = false; f.meter = 0; f.spinHit = new Set();
     sfx.special();
     announce(`<small>⭐ ${f.c.name}</small>${f.sp.name}!`, 1.0);
     bubble(f, f.sp.say || "Hiyaaa!");
@@ -325,7 +340,7 @@
     } else if (sp.type === "wave") {
       ring(f.x, 0xffcf3f); ring(f.x, 0xff4f8b);
       const e = objFor(sp.obj); e.position.set(f.x, 5, 0.5); scene.add(e); G.fx.push({ o: e, t: 0, dur: 0.8, kind: "pop" });
-      if (Math.abs(o.x - f.x) < 5.5) hit(o, f, { dmg: 15, push: 2.6, stun: 0.55, big: true });
+      G.f.forEach((v) => { if (v !== f && v.st !== "ko" && Math.abs(v.x - f.x) < 5.5) hit(v, f, { dmg: 15, push: 2.6, stun: 0.55, big: true }); });
     } else if (sp.type === "drop") {
       const mesh = objFor(sp.obj), tx = o.x;
       mesh.position.set(tx, 14, 0); scene.add(mesh);
@@ -335,6 +350,16 @@
   }
   function ko(f) {
     f.st = "ko"; f.t = 0; f.m.stars.visible = false;
+    if (ffa()) {
+      G.elim.push(f); sfx.ko(); spark(f.x, 5, "TUMBANG!", "#ff4f8b"); bubble(f, pick(["Aduh…", "Ampun!", "Nanti aku balas!", "Kok aku duluan?"]));
+      const al = alive(), humansLeft = al.some((h) => !h.cpu), hadHuman = G.f.some((h) => !h.cpu);
+      if (al.length <= 1 || (hadHuman && !humansLeft)) {
+        G.state = "roundEnd"; G.slow = 0.35; announce("K.O.!", 1.6);
+        const w = al.length ? al.reduce((a, b) => (b.hp > a.hp ? b : a)) : null;
+        endFFA(w);
+      }
+      return;
+    }
     const w = other(f);
     G.state = "roundEnd"; G.slow = 0.35;
     sfx.ko(); announce("K.O.!", 1.6);
@@ -354,9 +379,14 @@
       else { G.round++; startRound(); }
     });
   }
+  function endFFA(w) {
+    later(1.6, () => { G.slow = 1; if (w) { announce(`<small>${w.c.name}</small>JUARA TAWURAN!`, 1.6); bubble(w, pick(["Siapa lagi?!", w.sp.say || "Yes!", "Gampang!"])); } });
+    later(3.6, () => matchEnd(w));
+  }
   function timeUp() {
     G.state = "roundEnd";
     announce("WAKTU<br>HABIS!", 1.4);
+    if (ffa()) { const al = alive(); endFFA(al.length ? al.reduce((a, b) => (b.hp > a.hp ? b : a)) : null); return; }
     const [a, b] = G.f;
     endRound(Math.abs(a.hp - b.hp) < 0.5 ? null : a.hp > b.hp ? a : b);
   }
@@ -401,8 +431,9 @@
     }
     if (f.st === "atk") {
       const mv = f.move;
-      if (!f.hitDone && f.t >= mv.start && f.t < mv.start + mv.active && Math.abs(o.x - f.x) <= mv.range && Math.sign(o.x - f.x) === f.face) {
-        f.hitDone = true; hit(o, f, mv);
+      if (!f.hitDone && f.t >= mv.start && f.t < mv.start + mv.active) {
+        const tg = targetInFront(f, mv.range);
+        if (tg) { f.hitDone = true; hit(tg, f, mv); }
       }
       if (f.t >= mv.start + mv.active + mv.rec) { f.st = "idle"; f.move = null; }
     } else if (f.st === "hit") {
@@ -413,7 +444,7 @@
       if (f.sp.type === "spin") {
         if (f.t > 0.3 && f.t < 0.85) {
           f.x += f.face * 12 * dt;
-          if (!f.hitDone && Math.abs(o.x - f.x) < 1.7) { f.hitDone = true; hit(o, f, { dmg: 17, push: 2.2, stun: 0.55, big: true }); }
+          G.f.forEach((v) => { if (v !== f && v.st !== "ko" && !f.spinHit.has(v) && Math.abs(v.x - f.x) < 1.7) { f.spinHit.add(v); hit(v, f, { dmg: 17, push: 2.2, stun: 0.55, big: true }); } });
         }
         if (f.t >= 1.0) { f.st = "idle"; f.hitDone = false; }
       } else {
@@ -428,22 +459,24 @@
     if (f.st !== "atk" && f.st !== "special" && f.st !== "ko") f.face = Math.sign(o.x - f.x) || f.face;
   }
   function separate() {
-    const [a, b] = G.f, d = b.x - a.x, min = 1.5;
-    if (Math.abs(d) < min && a.st !== "ko" && b.st !== "ko") {
-      const push = (min - Math.abs(d)) / 2, s = Math.sign(d) || 1;
-      a.x -= s * push; b.x += s * push;
-      const B = bound(); a.x = clamp(a.x, -B, B); b.x = clamp(b.x, -B, B);
+    const al = alive(), min = ffa() ? 1.1 : 1.5, B = bound();
+    for (let i = 0; i < al.length; i++) for (let j = i + 1; j < al.length; j++) {
+      const a = al[i], b = al[j], d = b.x - a.x;
+      if (Math.abs(d) < min) {
+        const push = (min - Math.abs(d)) / 2, s = Math.sign(d) || (i % 2 ? 1 : -1);
+        a.x = clamp(a.x - s * push, -B, B); b.x = clamp(b.x + s * push, -B, B);
+      }
     }
   }
   function updateProjs(dt) {
     G.projs = G.projs.filter((p) => {
       p.life -= dt;
-      const o = other(p.owner);
       if (p.kind === "drop") {
         p.y = Math.max(0.8, 14 * (p.life / 0.75)); p.mesh.position.set(p.x, p.y, 0); p.mesh.rotation.z += dt * 3;
         if (p.life <= 0) {
           scene.remove(p.shadow); ring(p.x, 0xffffff); G.shake = Math.max(G.shake, 0.3);
-          if (Math.abs(o.x - p.x) < 1.8) hit(o, p.owner, { dmg: 22, push: 1, stun: 0.7, big: true, unblockable: true });
+          const victims = G.f.filter((v) => v !== p.owner && v.st !== "ko" && Math.abs(v.x - p.x) < 1.8);
+          if (victims.length) victims.forEach((v) => hit(v, p.owner, { dmg: 22, push: 1, stun: 0.7, big: true, unblockable: true }));
           else spark(p.x, 2.2, "MELESET!", "#cccccc");
           setTimeout(() => scene.remove(p.mesh), 400);
           return false;
@@ -451,7 +484,8 @@
         return true;
       }
       p.x += p.vx * dt; p.mesh.position.x = p.x; p.mesh.rotation.z -= dt * 10 * Math.sign(p.vx);
-      if (o.st !== "ko" && Math.abs(o.x - p.x) < 1.1) {
+      const o = G.f.find((v) => v !== p.owner && v.st !== "ko" && Math.abs(v.x - p.x) < 1.1);
+      if (o) {
         hit(o, p.owner, p.kind === "stun" ? { dmg: 6, push: 0.6, stunType: true } : { dmg: 18, push: 1.8, stun: 0.55, big: true });
         scene.remove(p.mesh); return false;
       }
@@ -508,7 +542,7 @@
     if (e.repeat) return;
     keys[e.code] = true;
     const k = ownerOfKey(e.code); if (!k) return;
-    const p = G.mode === "2p" ? k.p : 0;          // main sendiri: dua set tombol sama-sama untuk pemain 1
+    const p = G.twoHuman ? k.p : 0;          // main sendiri: dua set tombol sama-sama untuk pemain 1
     const f = G.f[p]; if (!f || f.cpu) return;
     if (k.act === "punch" || k.act === "kick" || k.act === "special") { if (G.state === "fight") f.ctrl.queue.push(k.act); }
     else f.ctrl[k.act] = true;
@@ -516,10 +550,10 @@
   addEventListener("keyup", (e) => {
     keys[e.code] = false;
     const k = ownerOfKey(e.code); if (!k) return;
-    const p = G.mode === "2p" ? k.p : 0, f = G.f[p]; if (!f || f.cpu) return;
+    const p = G.twoHuman ? k.p : 0, f = G.f[p]; if (!f || f.cpu) return;
     if (k.act === "left" || k.act === "right" || k.act === "block") {
       // jangan lepaskan kalau tombol lain untuk aksi yang sama masih ditekan
-      const still = (G.mode === "2p" ? KEYMAP[p][k.act] : KEYMAP[0][k.act].concat(KEYMAP[1][k.act])).some((c) => keys[c]);
+      const still = (G.twoHuman ? KEYMAP[p][k.act] : KEYMAP[0][k.act].concat(KEYMAP[1][k.act])).some((c) => keys[c]);
       if (!still) f.ctrl[k.act] = false;
     }
   });
@@ -527,7 +561,7 @@
 
   function buildPads() {
     const host = $("pads"); host.innerHTML = "";
-    const two = G.mode === "2p";
+    const two = G.twoHuman;
     const make = (p, cls, withMove) => {
       const d = document.createElement("div"); d.className = "pad " + cls + (two ? " small" : "");
       d.innerHTML = (withMove ? `<button class="mv" data-a="left" aria-label="Mundur/maju kiri">◀</button><button class="mv" data-a="right" aria-label="Maju/mundur kanan">▶</button>` : "") +
@@ -551,15 +585,21 @@
   }
 
   // ---------------- HUD ----------------
-  function setHud(on) { $("hud").hidden = !on; $("pads").hidden = !on; $("back").hidden = on; }
+  function setHud(on) { $("hud").hidden = !on; $("pads").hidden = !on; $("back").hidden = on; $("roster").hidden = !on || !ffa(); }
   function hudInit() {
-    G.f.forEach((f, i) => {
+    G.hudF = ffa() ? [G.f[0], G.twoHuman ? G.f[1] : null] : [G.f[0], G.f[1]];
+    G.hudF.forEach((f, i) => {
+      document.querySelector(i ? ".side.r" : ".side.l").style.visibility = f ? "visible" : "hidden";
+      if (!f) return;
       $("h-f" + (i + 1)).src = "faces/" + f.c.id + ".png";
       $("h-n" + (i + 1)).textContent = f.c.name + (f.cpu ? " 🤖" : "");
     });
+    $("roster").innerHTML = ffa() ? G.f.map((f, i) => `<div class="rs${f.cpu ? "" : " me"}" id="rs${i}"><img src="faces/${f.c.id}.png" alt=""><i><b id="rsb${i}"></b></i></div>`).join("") : "";
   }
   function hudUpdate(dt) {
-    G.f.forEach((f, i) => {
+    if (ffa()) G.f.forEach((f, i) => { const b = $("rsb" + i); if (b) { b.style.width = (f.hp / HP) * 100 + "%"; $("rs" + i).classList.toggle("ko", f.st === "ko"); } });
+    G.hudF.forEach((f, i) => {
+      if (!f) return;
       const n = i + 1;
       f.shownHp = Math.max(f.hp, f.shownHp - dt * 30);
       $("h-hp" + n).style.width = (f.hp / HP) * 100 + "%";
@@ -584,43 +624,56 @@
 
   function openPick(mode) {
     G.mode = mode; G.p1 = null; G.p2 = null; G.step = 1;
+    $("ffa-wrap").hidden = mode !== "ffa";
     $("pick-extra").hidden = mode === "tour";
     $("diff-wrap").hidden = mode === "2p";
-    $("b-fight").textContent = mode === "tour" ? "Mulai Turnamen 🏆" : "TARUNG! 🥊";
+    $("b-fight").textContent = mode === "tour" ? "Mulai Turnamen 🏆" : mode === "ffa" ? "TAWURAN! 🔥" : "TARUNG! 🥊";
     renderPick(); show("s-pick");
   }
   function renderPick() {
     const st = $("pick-status");
     if (G.mode === "tour") st.textContent = G.p1 ? `Jagoanmu: ${G.p1.name}. Siap?` : "Pilih jagoanmu";
+    else if (G.mode === "ffa") st.textContent = G.ffaH === 2 && G.step === 2 ? (G.p2 ? "Siap tawuran!" : "Pemain 2 (merah), pilih jagoan") : G.p1 ? `Jagoanmu: ${G.p1.name}. Sisanya diacak komputer.` : "Pilih jagoanmu";
     else if (G.mode === "2p") st.textContent = G.step === 1 ? "Pemain 1 (biru), pilih jagoan" : G.p2 ? "Siap tarung!" : "Pemain 2 (merah), pilih jagoan";
     else st.textContent = G.step === 1 ? "Pilih jagoanmu" : G.p2 ? "Siap tarung!" : "Pilih lawanmu (atau 🎲 Acak)";
     $("grid").innerHTML = CREW.map((c) => {
       const cls = G.p1 === c ? "p1" : G.p2 === c ? "p2" : "";
-      const badge = G.p1 === c ? '<span class="badge">P1</span>' : G.p2 === c ? `<span class="badge">${G.mode === "2p" ? "P2" : "LAWAN"}</span>` : "";
+      const badge = G.p1 === c ? '<span class="badge">P1</span>' : G.p2 === c ? `<span class="badge">${G.mode === "2p" || G.mode === "ffa" ? "P2" : "LAWAN"}</span>` : "";
       return `<button class="fighter ${cls}" data-id="${c.id}">${badge}<img src="faces/${c.id}.png" alt=""><b>${c.name}</b><small>⭐ ${spOf(c).name}</small></button>`;
     }).join("");
     $("arenas").innerHTML = [{ id: "random", name: "🎲 Acak", desc: "Biar seru" }].concat(ARENAS).map((a) => `<button class="arena" data-id="${a.id}" aria-pressed="${G.arena === a.id}">${a.name}<small>${a.desc}</small></button>`).join("");
+    $("ffa-n").innerHTML = [3, 4, 5, 6, 7, 8].filter((n) => n <= CREW.length).map((n) => `<button data-n="${n}" aria-pressed="${G.ffaN === n}">${n} orang</button>`).join("");
+    $("ffa-h").innerHTML = [1, 2].map((n) => `<button data-h="${n}" aria-pressed="${G.ffaH === n}">${n === 1 ? "👤 Main sendiri" : "👥 Berdua"}</button>`).join("");
     $("diff").innerHTML = Object.entries(DIFFS).map(([k, d]) => `<button data-k="${k}" aria-pressed="${G.diff === k}">${d.label}</button>`).join("");
   }
   $("grid").addEventListener("click", (e) => {
     const b = e.target.closest(".fighter"); if (!b) return;
     const c = CREW.find((x) => x.id === b.dataset.id); sfx.click();
-    if (G.mode === "tour") G.p1 = c;
+    if (G.mode === "tour" || (G.mode === "ffa" && G.ffaH === 1)) G.p1 = c;
     else if (G.step === 1) { G.p1 = c; if (G.p2 === c) G.p2 = null; G.step = 2; }
     else { if (c === G.p1) { G.p1 = c; G.step = 2; } else G.p2 = c; }
     renderPick();
   });
+  $("ffa-n").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; G.ffaN = +b.dataset.n; store.set("br_ffaN", G.ffaN); sfx.click(); renderPick(); });
+  $("ffa-h").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; G.ffaH = +b.dataset.h; G.p2 = null; G.step = 1; sfx.click(); renderPick(); });
   $("arenas").addEventListener("click", (e) => { const b = e.target.closest(".arena"); if (!b) return; G.arena = b.dataset.id; sfx.click(); renderPick(); });
   $("diff").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; G.diff = b.dataset.k; store.set("br_diff", G.diff); sfx.click(); renderPick(); });
   $("b-back").onclick = () => { sfx.click(); if (G.mode !== "tour" && G.step === 2) { G.step = 1; G.p2 = null; renderPick(); } else show("s-title"); };
   $("b-rand").onclick = () => {
     sfx.click();
-    if (G.mode === "tour" || G.step === 1) { G.p1 = pick(CREW); if (G.mode !== "tour") G.step = 2; if (G.p2 === G.p1) G.p2 = null; }
+    if (G.mode === "tour" || (G.mode === "ffa" && G.ffaH === 1)) G.p1 = pick(CREW);
+    else if (G.step === 1) { G.p1 = pick(CREW); G.step = 2; if (G.p2 === G.p1) G.p2 = null; }
     else G.p2 = pick(CREW.filter((c) => c !== G.p1));
     renderPick();
   };
   $("b-fight").onclick = () => {
     if (!G.p1) G.p1 = pick(CREW);
+    if (G.mode === "ffa") {
+      if (G.ffaH === 2 && !G.p2) G.p2 = pick(CREW.filter((c) => c !== G.p1));
+      G.tour = null;
+      startFFA(G.ffaH === 2 ? [G.p1, G.p2] : [G.p1], G.ffaN, G.arena === "random" ? pick(ARENAS).id : G.arena, G.diff);
+      return;
+    }
     if (G.mode === "tour") {
       const opps = shuffle(CREW.filter((c) => c !== G.p1)).slice(0, 4);
       G.tour = { opps, idx: 0, diffs: ["santai", "normal", "normal", "jago"] };
@@ -637,6 +690,7 @@
   $("b-menu").onclick = () => quitToMenu();
   $("b-again").onclick = () => {
     if (G.tour) { G.tour.idx = 0; G.tour.opps = shuffle(CREW.filter((c) => c !== G.p1)).slice(0, 4); startMatch(G.p1, G.tour.opps[0], pick(ARENAS).id, "santai"); }
+    else if (G.last.ffa) startFFA(G.last.humans, G.last.n, G.arena === "random" ? pick(ARENAS).id : G.arena, G.diff);
     else startMatch(G.last.a, G.last.b, G.last.arena === "random" ? pick(ARENAS).id : G.last.arena, G.diff);
   };
   $("b-next").onclick = () => { const t = G.tour; if (!t) return; startMatch(G.p1, t.opps[t.idx], pick(ARENAS).id, t.diffs[t.idx]); };
@@ -661,6 +715,7 @@
     G.last = { a, b, arena: G.mode === "tour" ? "random" : G.arena };
     if (diff) G.diff = diff;
     buildArena(arenaId);
+    G.twoHuman = G.mode === "2p";
     G.f = [newFighter(a, -1, false), newFighter(b, 1, G.mode !== "2p")];
     G.round = 1;
     show(null); setHud(true); buildPads(); hudInit();
@@ -669,6 +724,26 @@
     later(1.6, startRound);
     G.state = "intro";
     resetRound();
+  }
+  function startFFA(humans, n, arenaId, diff) {
+    clearFight();
+    showMembers.forEach((m) => scene.remove(m.root)); showMembers = [];
+    G.snapCam = true;
+    G.last = { ffa: true, humans, n };
+    if (diff) G.diff = diff;
+    buildArena(arenaId);
+    const roster = humans.concat(shuffle(CREW.filter((c) => !humans.includes(c))).slice(0, Math.max(0, n - humans.length)));
+    G.twoHuman = humans.length === 2;
+    G.f = roster.map((c, i) => newFighter(c, i, i >= humans.length));
+    // banyak orang: kepala dikecilkan sedikit biar tidak saling menutupi
+    G.f.forEach((f) => { f.m.head.scale.set(3.3 * 0.75, 4.1 * 0.75, 1); f.m.head.position.y = 2.8 + (4.1 * 0.75) / 2; f.m.stars.position.y = 6.2; });
+    G.round = 1; G.elim = [];
+    resetRound();
+    show(null); setHud(true); buildPads(); hudInit();
+    G.state = "intro";
+    announce(`<small>${roster.length} orang, yang terakhir berdiri menang!</small>TAWURAN!`, 1.8);
+    sfx.bell();
+    later(2.0, () => { announce("MULAI!", 0.8); G.state = "fight"; });
   }
   function startRound() {
     resetRound();
@@ -683,6 +758,17 @@
     setHud(false);
     $("r-face").src = "faces/" + winner.c.id + ".png";
     $("b-next").hidden = true; $("r-ladder").innerHTML = "";
+    if (ffa()) {
+      const N = G.f.length, rank = (f) => (f === winner ? 1 : G.elim.includes(f) ? N - G.elim.indexOf(f) : 2);
+      const humans = G.f.filter((f) => !f.cpu), won = humans.includes(winner);
+      $("r-face").src = "faces/" + (winner || humans[0]).c.id + ".png";
+      $("r-big").textContent = winner ? (won ? `👑 ${winner.c.name} JUARA TAWURAN!` : `${winner.c.name} juara tawuran`) : "Semua tumbang!";
+      $("r-sub").textContent = humans.map((h) => `${h.c.name}: peringkat ${rank(h)} dari ${N}`).join(" · ");
+      $("r-ladder").innerHTML = G.f.slice().sort((a, b) => rank(a) - rank(b)).map((f) => `<div class="${f === winner ? "now" : ""}"><img src="faces/${f.c.id}.png" alt="">#${rank(f)} ${f.c.name}</div>`).join("");
+      won ? sfx.win() : sfx.ko();
+      show("s-result");
+      return;
+    }
     if (G.mode === "2p") { $("r-big").textContent = winner.c.name + " MENANG! 🏆"; $("r-sub").textContent = `${G.f[0].c.name} ${G.f[0].wins} - ${G.f[1].wins} ${G.f[1].c.name}`; sfx.win(); }
     else if (G.tour) {
       const t = G.tour;
@@ -704,6 +790,7 @@
   // ---------------- kamera & loop ----------------
   function resize() {
     const w = innerWidth, h = innerHeight;
+    if (!w || !h) return;               // jendela tersembunyi: jangan rusak ukuran kamera
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
   addEventListener("resize", resize); resize();
@@ -729,7 +816,7 @@
     const due = [];
     G.timers = G.timers.filter((tm) => { if (tm.run !== G.run) return false; tm.t -= rdt; if (tm.t <= 0) { due.push(tm); return false; } return true; });
     due.forEach((tm) => { if (tm.run === G.run) tm.fn(); });
-    if (G.f.length === 2) {
+    if (G.f.length >= 2) {
       if (G.state === "fight") { G.clock -= dt; if (G.clock <= 0) { G.clock = 0; timeUp(); } }
       G.f.forEach((f) => f.meter = Math.min(100, f.meter + (G.state === "fight" ? 2 * dt : 0)));
       G.f.forEach((f) => updateFighter(f, dt));
@@ -748,11 +835,15 @@
       if (k >= 1) { if (e.o) scene.remove(e.o); if (e.el) e.el.remove(); return false; }
       return true;
     });
-    if (G.f.length === 2) hudUpdate(rdt);
+    if (G.f.length >= 2) hudUpdate(rdt);
   }
   function render(rdt) {
     let mid = 0, span = 4.8;
-    if (G.f.length === 2) { mid = (G.f[0].x + G.f[1].x) / 2; span = Math.abs(G.f[0].x - G.f[1].x); }
+    if (G.f.length >= 2) {
+      const al = alive().length >= 2 ? alive() : G.f;
+      const xs = al.map((f) => f.x), lo = Math.min(...xs), hi = Math.max(...xs);
+      mid = (lo + hi) / 2; span = hi - lo;
+    }
     else { showMembers.forEach((m, i) => { m.body.position.y = Math.abs(Math.sin(performance.now() / 300 + i)) * 0.15; m.arms[1].rotation.x = -0.9 + Math.sin(performance.now() / 200 + i) * 0.5; }); }
     const tanH = Math.tan((camera.fov * Math.PI) / 360);
     const needW = span / 2 + 3.6, needH = 4.6;
@@ -776,7 +867,7 @@
     showcase();
     setHud(false);
     show("s-title");
-    window.__br = { G, startMatch, ARENAS, CREW, hit, sim(sec) { for (let t = 0; t < sec; t += 1 / 30) step(1 / 30); return { state: G.state, round: G.round, hp: G.f.map((f) => Math.round(f.hp)), st: G.f.map((f) => f.st), x: G.f.map((f) => +f.x.toFixed(2)), wins: G.f.map((f) => f.wins) }; } };
+    window.__br = { G, cam: camera, scene, startMatch, ARENAS, CREW, hit, draw: () => { G.snapCam = true; render(0.016); }, sim(sec) { for (let t = 0; t < sec; t += 1 / 30) step(1 / 30); return { state: G.state, round: G.round, hp: G.f.map((f) => Math.round(f.hp)), st: G.f.map((f) => f.st), x: G.f.map((f) => +f.x.toFixed(2)), wins: G.f.map((f) => f.wins) }; } };
     requestAnimationFrame(frame);
   });
 })();
