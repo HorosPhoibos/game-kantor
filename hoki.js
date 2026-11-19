@@ -17,6 +17,9 @@
 
   // ---------- suara ----------
   let actx = null, soundOn = true;
+  // browser (terutama HP) baru mengizinkan suara setelah layar disentuh: buka suara di sentuhan pertama
+  const unlockAudio = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch (e) { /* abaikan */ } };
+  addEventListener("pointerdown", unlockAudio, { passive: true }); addEventListener("keydown", unlockAudio); addEventListener("touchend", unlockAudio, { passive: true });
   function beep(f, d = 0.1, type = "triangle", v = 0.05, delay = 0, slide = 0) {
     if (!soundOn) return;
     try {

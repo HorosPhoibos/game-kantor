@@ -30,6 +30,26 @@
 
   // ================= suara =================
   let actx = null, soundOn = store.get("rk_sound", true), noiseBuf = null;
+  // browser (terutama HP) baru mengizinkan suara setelah layar disentuh: buka suara di sentuhan pertama
+  const unlockAudio = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch (e) { /* abaikan */ } };
+  addEventListener("pointerdown", unlockAudio, { passive: true }); addEventListener("keydown", unlockAudio); addEventListener("touchend", unlockAudio, { passive: true });
+  // suara pukulan: dentuman rendah + tamparan (noise)
+  function punchFx(power) {
+    if (!soundOn) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const a = actx, t = a.currentTime;
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(170 + 50 * power, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14);
+      g.gain.setValueAtTime(Math.min(0.5, 0.22 * power), t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.22);
+      const len = Math.floor(a.sampleRate * 0.08), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+      const s = a.createBufferSource(), f = a.createBiquadFilter(), g2 = a.createGain();
+      s.buffer = buf; f.type = "highpass"; f.frequency.value = 900 + 600 * power; g2.gain.value = Math.min(0.6, 0.25 * power);
+      s.connect(f); f.connect(g2); g2.connect(a.destination); s.start(t);
+    } catch (e) { /* abaikan */ }
+  }
   function ac() {
     if (!soundOn) return null;
     try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); return actx; } catch (e) { return null; }
@@ -53,9 +73,9 @@
   const sfx = {
     bell: () => { beep(1250, 0.7, "triangle", 0.08); beep(1870, 0.5, "sine", 0.04); },
     bell3: () => { [0, 0.25, 0.5].forEach((d) => beep(1250, 0.4, "triangle", 0.07, 0, d)); },
-    jab: () => beep(220, 0.06, "square", 0.05, -80),
-    heavy: () => { beep(120, 0.16, "sawtooth", 0.09, -60); beep(70, 0.2, "square", 0.05, -20); },
-    slam: () => { beep(70, 0.45, "sawtooth", 0.12, -30); noise(0.08, 0.5, 300, 0.8); },
+    jab: () => punchFx(0.7),
+    heavy: () => { punchFx(1.4); beep(70, 0.2, "square", 0.05, -20); },
+    slam: () => { punchFx(2); beep(60, 0.45, "sawtooth", 0.1, -25); noise(0.08, 0.5, 300, 0.8); },
     crash: () => { noise(0.1, 0.45, 2600, 0.5); beep(180, 0.2, "square", 0.05, -100); },
     splash: () => { noise(0.12, 0.9, 700, 0.4); },
     meow: () => { beep(700, 0.25, "sawtooth", 0.05, 500); beep(1100, 0.3, "triangle", 0.04, -400, 0.2); },

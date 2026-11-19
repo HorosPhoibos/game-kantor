@@ -15,10 +15,10 @@ CROPS = {
   "josh":    ("8.jpg", 135, 243, 140),
   "irul":    ("8.jpg", 333, 256, 100),
   "paktas":  ("8.jpg", 882, 475, 120),
-  "ardi":    ("ardi.jpg", 183, 50, 140),
-  "hery":    ("hery.jpg", 102, 15, 115),
-  "heriw":   ("heriwarung.jpg", 240, 80, 150),
-  "ali":     ("ali.jpg", 252, 60, 230),
+  "ardi":    ("ardi.png", 183, 50, 140),
+  "hery":    ("hery.png", 104, 6, 138),
+  "heriw":   ("heriwarung.png", 243, 42, 180),
+  "ali":     ("ali.png", 252, 60, 230),
   "topik":   ("topik.png", 207, 52, 165),
 }
 W, H = 256, 320
