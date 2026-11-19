@@ -1150,7 +1150,7 @@
   const endPtr = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; };
   canvas.addEventListener("pointerup", endPtr); canvas.addEventListener("pointercancel", endPtr);
   canvas.addEventListener("wheel", (e) => { e.preventDefault(); S.zoom = clamp(S.zoom * (e.deltaY > 0 ? 1.1 : 0.9), 3.5, 22); }, { passive: false });
-  const defaultZoom = () => (ffa() ? A.half * 1.45 + 2 : A.half + 4.2);
+  const defaultZoom = () => 1.25 * (ffa() ? A.half * 1.45 + 2 : A.half + 4.2);
   canvas.addEventListener("dblclick", () => { S.yaw = Math.PI / 4; S.pitch = 0.62; S.zoom = defaultZoom(); });
 
   // ================= HUD =================
