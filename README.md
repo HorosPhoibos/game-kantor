@@ -1,10 +1,10 @@
 # Game Kantor
 
-Dua game 3D dengan wajah teman kantor:
-- **Antar Rakit** (`antar.html`): antar komputer ke klien, cukup ketuk.
-- **Office Brawl** (`brawl.html`): adu jotos 1 lawan 1 dengan jurus andalan masing-masing.
-
-- **Ring Kantor** (`ring.html`): tinju otomatis bergaya diorama pixel. Tonton, atur strategi pojok, dan taruhan pakai Poin Kantor (bukan uang).
+Empat game browser dengan wajah teman kantor:
+- **Ring Kantor** (`ring.html`): smackdown otomatis. Duel atau tawuran 3–8 orang di 5 arena (ring, gudang, kolam, warung, parkiran). Banting, suplex, lempar keluar arena, hantam pakai barang kantor, jurus khas tiap orang. Tonton, atur strategi, dan taruhan pakai Poin Kantor.
+- **Antar Rakit** (`antar.html`): antar komputer ke klien, cukup ketuk. Awas mobil nyelonong: telat ngerem = bayar ganti rugi.
+- **Office Brawl** (`brawl.html`): adu jotos yang dimainkan sendiri, 1 lawan 1 atau tawuran.
+- **Hoki Kantor** (`hoki.html`): mesin hoki bergambar teman kantor (8 sama di mana saja, tumble, SK Naik Gaji = putaran gratis, Amplop THR = pengali). Poin bohongan, sama dengan dompet Ring Kantor.
 
 Halaman depan `index.html` untuk memilih game.
 
@@ -36,3 +36,10 @@ Orang yang fotonya belum ada di `faces/` disembunyikan otomatis dari game.
 - Keyboard pemain 2: ←/→ jalan, K pukul, L tendang, ↓ tangkis, O jurus.
 - Mode gampang (default nyala): jagoan jalan sendiri mendekati lawan.
 - Mode Tawuran: 3–8 jagoan sekaligus (1–2 pemain, sisanya komputer). Yang terakhir berdiri menang.
+
+## Ring Kantor
+- Jurus khas tiap orang diatur di `characters.js` bagian `window.RING`.
+- Opsi di layar judul: jumlah ronde, gaya pixel, suara, darah (ON/OFF), kamera sinematik (ON/OFF).
+
+## Hoki Kantor
+- Peluang diatur di `hoki-engine.js`. Rata-rata balik sekitar 95–96%, putaran gratis kira-kira tiap 270 putaran.
